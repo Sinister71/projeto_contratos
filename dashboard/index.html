@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Executivo — Gestão Financeira de Contratos & Atas de TI</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdfa',
+              500: '#14b8a6',
+              600: '#0d9488',
+              900: '#134e4a',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!-- Vue 3 -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #030712; /* zinc-950 */
+      color: #f3f4f6;
+    }
+    .font-mono-num {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #090d16;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1f2937;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #374151;
+    }
+    .card-glass {
+      background: rgba(17, 24, 39, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+    }
+    .card-glass-hover:hover {
+      border-color: rgba(20, 184, 166, 0.35);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 15px rgba(20, 184, 166, 0.1);
+    }
+  </style>
+</head>
+<body class="min-h-screen antialiased selection:bg-teal-500 selection:text-white">
+
+  <div id="app" class="flex flex-col min-h-screen" v-cloak>
+    
+    <!-- Top Navigation -->
+    <header class="sticky top-0 z-40 border-b border-gray-800/80 bg-gray-950/80 backdrop-blur-md px-6 py-3.5">
+      <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="p-2.5 rounded-xl bg-gradient-to-br from-teal-500/20 to-emerald-500/10 border border-teal-500/30 text-teal-400">
+            <i data-lucide="shield-check" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+                Painel Executivo de Custos e Contratos TI
+              </h1>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wide bg-teal-500/10 text-teal-300 border border-teal-500/20">
+                GETI • VUE 3
+              </span>
+            </div>
+            <p class="text-xs text-gray-400">
+              Posição orçamentária atualizada • Monitoramento de ARPs, Contratos e Itens por Fiscal
+            </p>
+            <p class="text-[11px] text-gray-500 mt-0.5">{{ origemDados }}</p>
+          </div>
+        </div>
+
+        <!-- Quick actions -->
+        <div class="flex items-center gap-2.5">
+          <button @click="exportarCSV" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-900 hover:bg-gray-800 text-gray-300 border border-gray-700 transition shadow-sm">
+            <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-400"></i>
+            Exportar CSV
+          </button>
+          <button @click="exportarJSON" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-900 hover:bg-gray-800 text-gray-300 border border-gray-700 transition shadow-sm">
+            <i data-lucide="code" class="w-4 h-4 text-cyan-400"></i>
+            Exportar JSON
+          </button>
+          <button @click="resetFiltros" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-teal-500/10 hover:bg-teal-500/20 text-teal-300 border border-teal-500/30 transition">
+            <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+            Resetar Filtros
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6">
+
+      <!-- Financial Global KPIs -->
+      <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        <!-- Total Sob Gestao -->
+        <div class="card-glass p-5 rounded-2xl relative overflow-hidden card-glass-hover transition">
+          <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-cyan-500/10 rounded-full blur-xl pointer-events-none"></div>
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="text-xs font-medium uppercase tracking-wider text-gray-400">Valor Total Sob Gestão</p>
+              <h3 class="text-2xl font-extrabold text-white mt-1.5 font-mono-num">{{ formatarBRL(kpis.totalGlobal) }}</h3>
+              <p class="text-[11px] text-gray-400 mt-1 flex items-center gap-1">
+                <span class="text-cyan-400 font-semibold">{{ filtrados.length }}</span> contratos/atas filtrados
+              </p>
+            </div>
+            <div class="p-2.5 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+              <i data-lucide="wallet" class="w-5 h-5"></i>
+            </div>
+          </div>
+          <div class="mt-3 pt-3 border-t border-gray-800/80 flex items-center justify-between text-[11px]">
+            <span class="text-gray-400">Ticket Médio p/ Contrato</span>
+            <span class="font-mono-num font-semibold text-gray-300">{{ formatarBRL(kpis.ticketMedio) }}</span>
+          </div>
+        </div>
+
+        <!-- Custo Mensal Recorrente -->
+        <div class="card-glass p-5 rounded-2xl relative overflow-hidden card-glass-hover transition">
+          <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-emerald-500/10 rounded-full blur-xl pointer-events-none"></div>
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="text-xs font-medium uppercase tracking-wider text-gray-400">Custo Mensal Recorrente</p>
+              <h3 class="text-2xl font-extrabold text-white mt-1.5 font-mono-num">{{ formatarBRL(kpis.totalMensal) }}</h3>
+              <p class="text-[11px] text-gray-400 mt-1 flex items-center gap-1">
+                Comprometimento mensal ativo
+              </p>
+            </div>
+            <div class="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              <i data-lucide="calendar-clock" class="w-5 h-5"></i>
+            </div>
+          </div>
+          <div class="mt-3 pt-3 border-t border-gray-800/80 flex items-center justify-between text-[11px]">
+            <span class="text-gray-400">Itens Ativos Catalogados</span>
+            <span class="font-mono-num font-semibold text-gray-300">{{ kpis.totalItens }} itens</span>
+          </div>
+        </div>
+
+        <!-- Alerta Financeiro (A Vencer em até 90 dias) -->
+        <div class="card-glass p-5 rounded-2xl relative overflow-hidden card-glass-hover transition">
+          <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-amber-500/10 rounded-full blur-xl pointer-events-none"></div>
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="text-xs font-medium uppercase tracking-wider text-gray-400">Vencimento Próximo (≤90d)</p>
+              <h3 class="text-2xl font-extrabold text-amber-400 mt-1.5 font-mono-num">{{ formatarBRL(kpis.valorAlerta) }}</h3>
+              <p class="text-[11px] text-amber-300/80 mt-1 flex items-center gap-1">
+                <i data-lucide="alert-triangle" class="w-3 h-3"></i>
+                <span class="font-semibold">{{ kpis.qtdAlerta }}</span> contratos requerem renovação
+              </p>
+            </div>
+            <div class="p-2.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+              <i data-lucide="hourglass" class="w-5 h-5"></i>
+            </div>
+          </div>
+          <div class="mt-3 pt-3 border-t border-gray-800/80 flex items-center justify-between text-[11px]">
+            <span class="text-gray-400">% do Orçamento em Risco</span>
+            <span class="font-mono-num font-semibold text-amber-400">{{ kpis.percAlerta }}%</span>
+          </div>
+        </div>
+
+        <!-- Contratos Vencidos / Arquivados -->
+        <div class="card-glass p-5 rounded-2xl relative overflow-hidden card-glass-hover transition">
+          <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-rose-500/10 rounded-full blur-xl pointer-events-none"></div>
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="text-xs font-medium uppercase tracking-wider text-gray-400">Contratos Vencidos</p>
+              <h3 class="text-2xl font-extrabold text-rose-400 mt-1.5 font-mono-num">{{ formatarBRL(kpis.valorVencido) }}</h3>
+              <p class="text-[11px] text-rose-300/80 mt-1 flex items-center gap-1">
+                <i data-lucide="x-circle" class="w-3 h-3"></i>
+                <span class="font-semibold">{{ kpis.qtdVencidos }}</span> contratos encerrados
+              </p>
+            </div>
+            <div class="p-2.5 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20">
+              <i data-lucide="flame" class="w-5 h-5"></i>
+            </div>
+          </div>
+          <div class="mt-3 pt-3 border-t border-gray-800/80 flex items-center justify-between text-[11px]">
+            <span class="text-gray-400">Média de Itens por Contrato</span>
+            <span class="font-mono-num font-semibold text-gray-300">{{ kpis.mediaItensPorContrato }}</span>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- Advanced Filter Bar -->
+      <section class="card-glass p-4 rounded-2xl space-y-3">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+          
+          <!-- Search input -->
+          <div class="relative md:col-span-1">
+            <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            <input 
+              v-model="filtroTexto" 
+              type="text" 
+              placeholder="Buscar contrato, fornecedor, objeto..." 
+              class="w-full bg-gray-900/90 border border-gray-700/80 rounded-xl pl-10 pr-3.5 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-teal-500 transition"
+            >
+          </div>
+
+          <!-- Fiscal Select -->
+          <div>
+            <select 
+              v-model="filtroFiscal" 
+              class="w-full bg-gray-900/90 border border-gray-700/80 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-teal-500 transition cursor-pointer"
+            >
+              <option value="">👤 Todos os Fiscais</option>
+              <option v-for="fiscal in listaFiscais" :key="fiscal" :value="fiscal">{{ fiscal }}</option>
+            </select>
+          </div>
+
+          <!-- Tipo Select -->
+          <div>
+            <select 
+              v-model="filtroTipo" 
+              class="w-full bg-gray-900/90 border border-gray-700/80 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-teal-500 transition cursor-pointer"
+            >
+              <option value="">📑 Todos os Tipos (Contrato / ARP)</option>
+              <option value="Contrato">Apenas Contratos</option>
+              <option value="Ata de registro de preços">Apenas ARPs</option>
+            </select>
+          </div>
+
+          <!-- Faixa de Vencimento -->
+          <div>
+            <select 
+              v-model="filtroFaixa" 
+              class="w-full bg-gray-900/90 border border-gray-700/80 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-teal-500 transition cursor-pointer"
+            >
+              <option value="">⏳ Todas as Faixas de Prazo</option>
+              <option value="Vencido">🔴 Vencido</option>
+              <option value="Até 30 dias">🟠 Até 30 dias</option>
+              <option value="31 a 60 dias">🟡 31 a 60 dias</option>
+              <option value="61 a 90 dias">🟢 61 a 90 dias</option>
+              <option value="Acima de 90 dias">🔵 Acima de 90 dias</option>
+            <option value="Sem data definida">⚪ Sem data definida</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Filter Badges / Active stats -->
+        <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-gray-800/60 text-xs text-gray-400">
+          <div class="flex items-center gap-2">
+            <span>Exibindo <strong>{{ filtrados.length }}</strong> de <strong>{{ contratos.length }}</strong> contratos cadastrados.</span>
+            <span v-if="temFiltroAtivo" class="px-2 py-0.5 rounded bg-teal-500/10 text-teal-400 text-[10px] border border-teal-500/20">
+              Filtros ativos
+            </span>
+          </div>
+          <div class="flex items-center gap-4 text-xs font-mono-num">
+            <span>Soma Mensal Filtrada: <strong class="text-emerald-400">{{ formatarBRL(kpis.totalMensal) }}</strong></span>
+            <span>Soma Global Filtrada: <strong class="text-cyan-400">{{ formatarBRL(kpis.totalGlobal) }}</strong></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Charts Row -->
+      <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Fiscais Ranking / Bar Chart -->
+        <div class="card-glass p-5 rounded-2xl lg:col-span-2 flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+                <i data-lucide="bar-chart-2" class="w-4 h-4 text-teal-400"></i>
+                Volume Financeiro sob Gestão por Fiscal
+              </h3>
+              <p class="text-xs text-gray-400">Distribuição do valor global contratual atribuído a cada responsável</p>
+            </div>
+            <span class="text-xs text-gray-400 bg-gray-900 border border-gray-800 px-2.5 py-1 rounded-lg font-mono-num">
+              Top Fiscais
+            </span>
+          </div>
+          <div class="h-64 w-full relative">
+            <canvas id="fiscalBarChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Composição Contrato vs ARP / Donut Chart -->
+        <div class="card-glass p-5 rounded-2xl flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+                <i data-lucide="pie-chart" class="w-4 h-4 text-cyan-400"></i>
+                Distribuição de Valor por Tipo
+              </h3>
+              <p class="text-xs text-gray-400">Contratos vs Atas de Registro de Preço</p>
+            </div>
+          </div>
+          <div class="h-56 w-full relative flex items-center justify-center">
+            <canvas id="tipoDonutChart"></canvas>
+          </div>
+          <div class="grid grid-cols-2 gap-2 mt-2 pt-3 border-t border-gray-800/60 text-xs">
+            <div class="text-center p-2 rounded-lg bg-gray-900/50">
+              <span class="text-gray-400 text-[11px] block">Contratos</span>
+              <strong class="font-mono-num text-teal-400">{{ formatarBRL(totaisTipo.contrato) }}</strong>
+            </div>
+            <div class="text-center p-2 rounded-lg bg-gray-900/50">
+              <span class="text-gray-400 text-[11px] block">ARPs</span>
+              <strong class="font-mono-num text-cyan-400">{{ formatarBRL(totaisTipo.arp) }}</strong>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- Contracts & Items Drilldown Matrix -->
+      <section class="card-glass rounded-2xl overflow-hidden">
+        
+        <!-- Table header & quick sort -->
+        <div class="px-5 py-4 border-b border-gray-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+              <i data-lucide="table" class="w-4 h-4 text-teal-400"></i>
+              Matriz Contratual e Discriminação de Itens
+            </h3>
+            <p class="text-xs text-gray-400">Clique na seta ou na linha para abrir os itens orçamentários de cada contrato</p>
+          </div>
+
+          <div class="flex items-center gap-2 text-xs">
+            <span class="text-gray-400">Ordenar por:</span>
+            <button 
+              @click="alternarOrdenacao('valor_global')"
+              :class="campoOrdenacao === 'valor_global' ? 'bg-teal-500/20 text-teal-300 border-teal-500/40' : 'bg-gray-900 text-gray-400 border-gray-800'"
+              class="px-2.5 py-1 rounded-lg border font-medium transition flex items-center gap-1"
+            >
+              Valor Global
+              <i :data-lucide="ordemDesc ? 'arrow-down' : 'arrow-up'" class="w-3 h-3"></i>
+            </button>
+            <button 
+              @click="alternarOrdenacao('dias_para_vencer')"
+              :class="campoOrdenacao === 'dias_para_vencer' ? 'bg-teal-500/20 text-teal-300 border-teal-500/40' : 'bg-gray-900 text-gray-400 border-gray-800'"
+              class="px-2.5 py-1 rounded-lg border font-medium transition flex items-center gap-1"
+            >
+              Vencimento
+            </button>
+          </div>
+        </div>
+
+        <!-- Contracts Table -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-gray-300">
+            <thead class="bg-gray-900/90 text-gray-400 uppercase tracking-wider text-[11px] border-b border-gray-800">
+              <tr>
+                <th scope="col" class="py-3 px-3 w-10 text-center"></th>
+                <th scope="col" class="py-3 px-3">Identificação</th>
+                <th scope="col" class="py-3 px-4">Fornecedor & Objeto</th>
+                <th scope="col" class="py-3 px-3">Fiscal</th>
+                <th scope="col" class="py-3 px-3">Status / Prazo</th>
+                <th scope="col" class="py-3 px-4 text-right">Custo Mensal</th>
+                <th scope="col" class="py-3 px-4 text-right">Valor Global</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-800/60">
+              
+              <template v-for="c in contratosOrdenados" :key="c.id">
+                
+                <!-- Main Contract Row -->
+                <tr 
+                  @click="alternarExpandir(c.id)"
+                  :class="{'bg-gray-900/60': expandidos.includes(c.id)}"
+                  class="hover:bg-gray-900/80 cursor-pointer transition group"
+                >
+                  <td class="py-3 px-3 text-center">
+                    <button class="p-1 rounded hover:bg-gray-800 text-gray-400 group-hover:text-teal-400 transition">
+                      <i :data-lucide="expandidos.includes(c.id) ? 'chevron-down' : 'chevron-right'" class="w-4 h-4"></i>
+                    </button>
+                  </td>
+                  
+                  <!-- Identificacao -->
+                  <td class="py-3 px-3 whitespace-nowrap">
+                    <div class="flex items-center gap-2">
+                      <span 
+                        class="px-2 py-0.5 rounded text-[10px] font-semibold tracking-wider font-mono-num"
+                        :class="c.tipo === 'Ata de registro de preços' ? 'bg-cyan-500/10 text-cyan-300 border border-cyan-500/20' : 'bg-teal-500/10 text-teal-300 border border-teal-500/20'"
+                      >
+                        {{ c.tipo === 'Ata de registro de preços' ? 'ARP' : 'CONTRATO' }}
+                      </span>
+                      <strong class="text-white text-xs font-mono-num">{{ c.numero_contrato }}</strong>
+                    </div>
+                    <span class="text-[11px] text-gray-500 block mt-0.5">Proc: {{ c.id_processo || 'S/N' }}</span>
+                  </td>
+
+                  <!-- Fornecedor & Objeto -->
+                  <td class="py-3 px-4 max-w-sm">
+                    <span class="font-medium text-white block truncate">{{ c.razao_social }}</span>
+                    <span class="text-[11px] text-gray-400 block line-clamp-1 mt-0.5">{{ c.objeto }}</span>
+                  </td>
+
+                  <!-- Fiscal -->
+                  <td class="py-3 px-3 whitespace-nowrap">
+                    <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-gray-900 text-gray-300 border border-gray-800">
+                      <i data-lucide="user-check" class="w-3.5 h-3.5 text-teal-400"></i>
+                      {{ c.fiscal || 'Não atribuído' }}
+                    </span>
+                  </td>
+
+                  <!-- Status / Prazo -->
+                  <td class="py-3 px-3 whitespace-nowrap">
+                    <div class="flex items-center gap-2">
+                      <span 
+                        class="w-2 h-2 rounded-full"
+                        :class="obterCorStatus(c.status)"
+                      ></span>
+                      <span class="text-xs font-medium" :class="obterTextoCorStatus(c.status)">{{ c.status }}</span>
+                    </div>
+                    <span class="text-[11px] text-gray-500 font-mono-num block mt-0.5">
+                      {{ formatarData(c.data_fim) }} <template v-if="c.dias_para_vencer !== undefined">({{ c.dias_para_vencer }}d)</template>
+                    </span>
+                  </td>
+
+                  <!-- Custo Mensal -->
+                  <td class="py-3 px-4 text-right whitespace-nowrap font-mono-num">
+                    <span class="font-semibold text-emerald-400">{{ formatarBRL(calcularCustoMensalContrato(c)) }}</span>
+                  </td>
+
+                  <!-- Valor Global -->
+                  <td class="py-3 px-4 text-right whitespace-nowrap font-mono-num">
+                    <span class="font-bold text-white text-sm">{{ formatarBRL(c.valor_global) }}</span>
+                    <span class="text-[10px] text-gray-500 block">{{ c.itens ? c.itens.length : 0 }} itens</span>
+                  </td>
+                </tr>
+
+                <!-- Expanded Items Drilldown View -->
+                <tr v-if="expandidos.includes(c.id)" class="bg-gray-950/90">
+                  <td colspan="7" class="p-0">
+                    <div class="px-6 py-4 border-y border-teal-500/20 bg-gradient-to-b from-gray-900/60 to-gray-950/80">
+                      
+                      <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2">
+                          <i data-lucide="layers" class="w-4 h-4 text-teal-400"></i>
+                          <h4 class="text-xs font-semibold text-white uppercase tracking-wider">
+                            Detalhamento dos Itens Registrados • {{ c.numero_contrato }}
+                          </h4>
+                          <span class="px-2 py-0.5 rounded text-[10px] bg-gray-800 text-gray-300 font-mono-num">
+                            {{ c.itens.length }} item(ns)
+                          </span>
+                        </div>
+                        <div class="text-xs text-gray-400">
+                          Total somado dos itens: <strong class="text-teal-300 font-mono-num">{{ formatarBRL(somarTotalItens(c)) }}</strong>
+                        </div>
+                      </div>
+
+                      <div v-if="c.itens && c.itens.length > 0" class="rounded-xl border border-gray-800 overflow-hidden bg-gray-900/40">
+                        <table class="w-full text-left text-xs">
+                          <thead class="bg-gray-900 text-gray-400 uppercase text-[10px] tracking-wider border-b border-gray-800 font-semibold">
+                            <tr>
+                              <th class="py-2.5 px-3 w-14 text-center">Item</th>
+                              <th class="py-2.5 px-4">Especificação do Serviço / Equipamento</th>
+                              <th class="py-2.5 px-3">Localidade</th>
+                              <th class="py-2.5 px-3 text-center">Unidade</th>
+                              <th class="py-2.5 px-3 text-center">Quantidade</th>
+                              <th class="py-2.5 px-3">Vigência</th>
+                              <th class="py-2.5 px-4 text-right">Valor Mensal / Unitário</th>
+                              <th class="py-2.5 px-4 text-right">Valor Total Item</th>
+                            </tr>
+                          </thead>
+                          <tbody class="divide-y divide-gray-800/40 font-mono-num">
+                            <tr v-for="it in c.itens" :key="it.item_numero" class="hover:bg-gray-800/30 text-gray-300">
+                              <td class="py-2 px-3 text-center font-bold text-gray-400">#{{ it.item_numero }}</td>
+                              <td class="py-2 px-4 font-sans text-gray-200">
+                                {{ it.descricao }}
+                              </td>
+                              <td class="py-2 px-3 font-sans text-gray-400">{{ it.local || 'Geral' }}</td>
+                              <td class="py-2 px-3 text-center font-sans">
+                                <span class="px-1.5 py-0.5 rounded bg-gray-800 text-[10px] text-gray-300">{{ it.unidade }}</span>
+                              </td>
+                              <td class="py-2 px-3 text-center font-semibold text-white">{{ it.quantidade }}</td>
+                              <td class="py-2 px-3 font-sans text-gray-400 text-[11px]">{{ it.vigencia_texto || '12 meses' }}</td>
+                              <td class="py-2 px-4 text-right text-emerald-400">{{ formatarBRL(it.valor_mensal) }}</td>
+                              <td class="py-2 px-4 text-right font-bold text-white">{{ formatarBRL(it.valor_total_item) }}</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <div v-else class="text-center py-6 text-gray-500 text-xs">
+                        Nenhum item discriminado individualmente para este contrato.
+                      </div>
+
+                    </div>
+                  </td>
+                </tr>
+
+              </template>
+
+              <!-- Empty State -->
+              <tr v-if="contratosOrdenados.length === 0">
+                <td colspan="7" class="py-12 text-center text-gray-400">
+                  <i data-lucide="inbox" class="w-8 h-8 mx-auto text-gray-600 mb-2"></i>
+                  Nenhum contrato encontrado para os filtros selecionados.
+                </td>
+              </tr>
+
+            </tbody>
+          </table>
+        </div>
+
+      </section>
+
+      <!-- Fiscal Summary Drawer / Cards Section -->
+      <section class="card-glass p-5 rounded-2xl space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+              <i data-lucide="users" class="w-4 h-4 text-teal-400"></i>
+              Resumo Operacional & Orçamentário por Fiscal
+            </h3>
+            <p class="text-xs text-gray-400">Responsabilidade fiscal e alocação de recursos na Gerência de TI</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5">
+          <div 
+            v-for="f in fiscaisDetalhados" 
+            :key="f.nome"
+            @click="filtroFiscal = (filtroFiscal === f.nome ? '' : f.nome)"
+            :class="filtroFiscal === f.nome ? 'border-teal-500 bg-teal-500/10' : 'border-gray-800 bg-gray-900/40 hover:border-gray-700'"
+            class="p-4 rounded-xl border transition cursor-pointer flex flex-col justify-between group"
+          >
+            <div>
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-white group-hover:text-teal-300 transition truncate">{{ f.nome }}</span>
+                <span class="text-[10px] font-mono-num font-semibold px-1.5 py-0.5 rounded bg-gray-800 text-gray-300">
+                  {{ f.contratosCount }} contr.
+                </span>
+              </div>
+              <p class="text-[11px] text-gray-400 mt-2">Volume Total:</p>
+              <h4 class="text-sm font-extrabold text-white font-mono-num mt-0.5">{{ formatarBRL(f.totalGlobal) }}</h4>
+            </div>
+
+            <div class="mt-3 pt-2.5 border-t border-gray-800/80 flex items-center justify-between text-[11px]">
+              <span class="text-gray-400">Recorrência Mês:</span>
+              <span class="font-mono-num text-emerald-400 font-semibold">{{ formatarBRL(f.totalMensal) }}</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-auto border-t border-gray-800/60 py-4 px-6 text-center text-xs text-gray-500">
+      Painel Gerencial de Contratos de TI • Vue 3 & Tailwind CSS • Dados integrados e reativos
+    </footer>
+
+  </div>
+
+  <script src="dados_contratos.js"></script>
+  <script>
+    const { createApp, ref, computed, onMounted, nextTick, watch } = Vue;
+
+    createApp({
+      setup() {
+        // --- Mock Dataset realista e completo ---
+        const CONTRATOS_EXEMPLO = [
+          {
+            id: 1,
+            id_processo: "GDC-0710/2025",
+            tipo: "Contrato",
+            numero_contrato: "115/2025",
+            razao_social: "EMBRATEL TELECOMUNICAÇÕES S.A.",
+            objeto: "Prestação de serviços de Link Dedicado de Internet 1 Gbps redundante e proteção Anti-DDoS.",
+            data_inicio: "2025-02-01",
+            data_fim: "2026-02-01",
+            dias_para_vencer: 25,
+            status: "Até 30 dias",
+            fiscal: "Carlos Eduardo Silva",
+            valor_global: 180000.00,
+            itens: [
+              { item_numero: "1.1", descricao: "Link de Internet Dedicado 1Gbps Full Duplex", local: "Datacenter Sede", unidade: "Mensal", quantidade: 1, valor_mensal: 11000.00, valor_total_item: 132000.00, vigencia_texto: "12 meses" },
+              { item_numero: "1.2", descricao: "Proteção mitigada contra ataques Anti-DDoS", local: "Datacenter Sede", unidade: "Mensal", quantidade: 1, valor_mensal: 4000.00, valor_total_item: 48000.00, vigencia_texto: "12 meses" }
+            ]
+          },
+          {
+            id: 2,
+            id_processo: "GDC-0899/2024",
+            tipo: "Contrato",
+            numero_contrato: "042/2024",
+            razao_social: "ORACLE DO BRASIL SISTEMAS LTDA",
+            objeto: "Suporte e atualização de licenças de Banco de Dados Oracle Enterprise e Exadata.",
+            data_inicio: "2024-05-10",
+            data_fim: "2025-05-10",
+            dias_para_vencer: -120,
+            status: "Vencido",
+            fiscal: "Carlos Eduardo Silva",
+            valor_global: 480000.00,
+            itens: [
+              { item_numero: "01", descricao: "Licenciamento de Banco de Dados Oracle Enterprise Edition", local: "Datacenter", unidade: "Anual", quantidade: 4, valor_mensal: 30000.00, valor_total_item: 360000.00, vigencia_texto: "12 meses" },
+              { item_numero: "02", descricao: "Suporte Premier e Atualizações 24x7", local: "Geral", unidade: "Mensal", quantidade: 1, valor_mensal: 10000.00, valor_total_item: 120000.00, vigencia_texto: "12 meses" }
+            ]
+          },
+          {
+            id: 3,
+            id_processo: "GDC-0112/2025",
+            tipo: "Ata de registro de preços",
+            numero_contrato: "ARP 018/2025",
+            razao_social: "DELL COMPUTADORES DO BRASIL",
+            objeto: "Aquisição de estações de trabalho de alto desempenho e servidores em rack para infraestrutura.",
+            data_inicio: "2025-06-01",
+            data_fim: "2026-06-01",
+            dias_para_vencer: 145,
+            status: "Acima de 90 dias",
+            fiscal: "Ana Paula Mendonça",
+            valor_global: 650000.00,
+            itens: [
+              { item_numero: "01", descricao: "Workstations Core i7 32GB RAM SSD 1TB NVMe", local: "Sede / Regionais", unidade: "Unidade", quantidade: 50, valor_mensal: 0.00, valor_total_item: 350000.00, vigencia_texto: "Entrega Única" },
+              { item_numero: "02", descricao: "Servidores PowerEdge R750 2U Dual Xeon", local: "Datacenter", unidade: "Unidade", quantidade: 3, valor_mensal: 0.00, valor_total_item: 300000.00, vigencia_texto: "Garantia 36m" }
+            ]
+          },
+          {
+            id: 4,
+            id_processo: "GDC-0442/2025",
+            tipo: "Contrato",
+            numero_contrato: "088/2025",
+            razao_social: "MICROSOFT CORPORATION BRASIL",
+            objeto: "Assinaturas e subscrições em nuvem Microsoft 365 E5 e créditos de consumo Azure Cloud.",
+            data_inicio: "2025-03-15",
+            data_fim: "2026-03-15",
+            dias_para_vencer: 52,
+            status: "31 a 60 dias",
+            fiscal: "Bruno Henrique Costa",
+            valor_global: 920000.00,
+            itens: [
+              { item_numero: "1", descricao: "Licenças de Usuário Microsoft 365 E5 com Copilot", local: "Colaboradores", unidade: "Licença/Mês", quantidade: 400, valor_mensal: 62000.00, valor_total_item: 744000.00, vigencia_texto: "12 meses" },
+              { item_numero: "2", descricao: "Consumo de Serviços de Nuvem Microsoft Azure", local: "Cloud", unidade: "Demanda", quantidade: 1, valor_mensal: 14666.67, valor_total_item: 176000.00, vigencia_texto: "12 meses" }
+            ]
+          },
+          {
+            id: 5,
+            id_processo: "GDC-0601/2025",
+            tipo: "Contrato",
+            numero_contrato: "102/2025",
+            razao_social: "TOTVS S.A.",
+            objeto: "Sustentação, suporte especializado e evolução do sistema ERP administrativo e folha de pagamento.",
+            data_inicio: "2025-01-10",
+            data_fim: "2026-01-10",
+            dias_para_vencer: 78,
+            status: "61 a 90 dias",
+            fiscal: "Carlos Eduardo Silva",
+            valor_global: 360000.00,
+            itens: [
+              { item_numero: "01", descricao: "Suporte e Manutenção Corretiva/Evolutiva ERP Protheus", local: "Sede", unidade: "Mensal", quantidade: 1, valor_mensal: 25000.00, valor_total_item: 300000.00, vigencia_texto: "12 meses" },
+              { item_numero: "02", descricao: "Banco de Horas Técnicas para Customizações", local: "Remoto", unidade: "Horas", quantidade: 300, valor_mensal: 5000.00, valor_total_item: 60000.00, vigencia_texto: "12 meses" }
+            ]
+          },
+          {
+            id: 6,
+            id_processo: "GDC-0322/2025",
+            tipo: "Ata de registro de preços",
+            numero_contrato: "ARP 009/2025",
+            razao_social: "CISCO SYSTEMS DO BRASIL",
+            objeto: "Equipamentos de switches de borda gerenciáveis e firewalls corporativos em alta disponibilidade.",
+            data_inicio: "2025-07-20",
+            data_fim: "2026-07-20",
+            dias_para_vencer: 185,
+            status: "Acima de 90 dias",
+            fiscal: "Ana Paula Mendonça",
+            valor_global: 540000.00,
+            itens: [
+              { item_numero: "1", descricao: "Firewall Next-Gen HA com Licença de Segurança 36m", local: "Perímetro Datacenter", unidade: "Par", quantidade: 2, valor_mensal: 0.00, valor_total_item: 280000.00, vigencia_texto: "36 meses" },
+              { item_numero: "2", descricao: "Switches Catalyst 48 Portas PoE+ 10Gbps Uplink", local: "Andares Sede", unidade: "Unidade", quantidade: 10, valor_mensal: 0.00, valor_total_item: 260000.00, vigencia_texto: "Garantia 36m" }
+            ]
+          },
+          {
+            id: 7,
+            id_processo: "GDC-0744/2025",
+            tipo: "Contrato",
+            numero_contrato: "130/2025",
+            razao_social: "CLOUDFLARE INC. / DISTRIBUIDOR BRASIL",
+            objeto: "Proteção de aplicações Web (WAF), CDN corporativa e gerenciamento seguro de DNS com Zero Trust.",
+            data_inicio: "2025-04-01",
+            data_fim: "2026-04-01",
+            dias_para_vencer: 80,
+            status: "61 a 90 dias",
+            fiscal: "Bruno Henrique Costa",
+            valor_global: 144000.00,
+            itens: [
+              { item_numero: "01", descricao: "Cloudflare Enterprise WAF e CDN com DNS Anycast", local: "Cloud", unidade: "Mensal", quantidade: 1, valor_mensal: 12000.00, valor_total_item: 144000.00, vigencia_texto: "12 meses" }
+            ]
+          },
+          {
+            id: 8,
+            id_processo: "GDC-0890/2025",
+            tipo: "Contrato",
+            numero_contrato: "145/2025",
+            razao_social: "KYNDRYL BRASIL SERVIÇOS DE TI",
+            objeto: "Serviço de backup em nuvem imutável, retenção de dados e Disaster Recovery gerenciado.",
+            data_inicio: "2025-08-01",
+            data_fim: "2026-08-01",
+            dias_para_vencer: 210,
+            status: "Acima de 90 dias",
+            fiscal: "Mariana Alencar",
+            valor_global: 280000.00,
+            itens: [
+              { item_numero: "1", descricao: "Armazenamento em Nuvem Imutável para Backup (100 TB)", local: "Cloud Secundária", unidade: "Mensal", quantidade: 1, valor_mensal: 15000.00, valor_total_item: 180000.00, vigencia_texto: "12 meses" },
+              { item_numero: "2", descricao: "Testes periódicos de Disaster Recovery e failover", local: "Datacenter", unidade: "Trimestral", quantidade: 4, valor_mensal: 8333.33, valor_total_item: 100000.00, vigencia_texto: "12 meses" }
+            ]
+          }
+        ];
+
+        // ------------------------------------------------------------------
+        // DADOS REAIS: vêm de dados_contratos.js, gerado pelo sistema em Python
+        // (exportar_dashboard.py). Sem esse arquivo, a página mostra os dados de
+        // exemplo acima.
+        // O arquivo traz só FATOS (datas, valores, itens). Prazo (dias), faixa
+        // (status) e valor global são calculados AQUI, ao abrir a página, para
+        // nunca mostrarem valores "congelados" no dia da exportação.
+        // ------------------------------------------------------------------
+        const MS_POR_DIA = 24 * 60 * 60 * 1000;
+
+        const diasParaVencer = (dataFim) => {
+          if (!dataFim) return undefined; // sem data: fora dos alertas e dos vencidos
+          const [ano, mes, dia] = dataFim.split("-").map(Number);
+          const hoje = new Date();
+          hoje.setHours(0, 0, 0, 0);
+          return Math.round((new Date(ano, mes - 1, dia) - hoje) / MS_POR_DIA);
+        };
+
+        const classificarFaixa = (dias) => {
+          if (dias === undefined) return "Sem data definida";
+          if (dias < 0) return "Vencido";
+          if (dias <= 30) return "Até 30 dias";
+          if (dias <= 60) return "31 a 60 dias";
+          if (dias <= 90) return "61 a 90 dias";
+          return "Acima de 90 dias";
+        };
+
+        const enriquecerContrato = (c) => {
+          const itens = c.itens || [];
+          const dias = diasParaVencer(c.data_fim);
+          return {
+            ...c,
+            itens,
+            dias_para_vencer: dias,
+            status: classificarFaixa(dias),
+            valor_global: itens.reduce((soma, it) => soma + (Number(it.valor_total_item) || 0), 0)
+          };
+        };
+
+        const DADOS_REAIS = window.DADOS_CONTRATOS || null;
+        const contratos = ref(DADOS_REAIS ? DADOS_REAIS.contratos.map(enriquecerContrato) : CONTRATOS_EXEMPLO);
+        const origemDados = DADOS_REAIS
+          ? "Dados do sistema • gerado em " + new Date(DADOS_REAIS.gerado_em).toLocaleString("pt-BR")
+          : "DADOS DE EXEMPLO • rode exportar_dashboard.py para carregar os contratos reais";
+
+        // --- Filtros Reativos ---
+        const filtroTexto = ref("");
+        const filtroFiscal = ref("");
+        const filtroTipo = ref("");
+        const filtroFaixa = ref("");
+
+        // --- Ordenacao & UI state ---
+        const campoOrdenacao = ref("valor_global");
+        const ordemDesc = ref(true);
+        const expandidos = ref([1, 4]); // Iniciar com alguns abertos para demonstrar o visual
+
+        const alternarExpandir = (id) => {
+          const index = expandidos.value.indexOf(id);
+          if (index > -1) {
+            expandidos.value.splice(index, 1);
+          } else {
+            expandidos.value.push(id);
+          }
+          nextTick(() => lucide.createIcons());
+        };
+
+        const alternarOrdenacao = (campo) => {
+          if (campoOrdenacao.value === campo) {
+            ordemDesc.value = !ordemDesc.value;
+          } else {
+            campoOrdenacao.value = campo;
+            ordemDesc.value = true;
+          }
+        };
+
+        const resetFiltros = () => {
+          filtroTexto.value = "";
+          filtroFiscal.value = "";
+          filtroTipo.value = "";
+          filtroFaixa.value = "";
+        };
+
+        const temFiltroAtivo = computed(() => {
+          return !!(filtroTexto.value || filtroFiscal.value || filtroTipo.value || filtroFaixa.value);
+        });
+
+        // --- Lista de Fiscais únicos ---
+        const listaFiscais = computed(() => {
+          const setF = new Set(contratos.value.map(c => c.fiscal).filter(Boolean));
+          return Array.from(setF).sort();
+        });
+
+        // --- Contratos Filtrados ---
+        const filtrados = computed(() => {
+          return contratos.value.filter(c => {
+            // Busca texto
+            if (filtroTexto.value) {
+              const q = filtroTexto.value.toLowerCase();
+              const match = (c.numero_contrato || "").toLowerCase().includes(q) ||
+                            (c.razao_social || "").toLowerCase().includes(q) ||
+                            (c.objeto || "").toLowerCase().includes(q) ||
+                            (c.fiscal || "").toLowerCase().includes(q) ||
+                            (c.id_processo || "").toLowerCase().includes(q);
+              if (!match) return false;
+            }
+            // Filtro Fiscal
+            if (filtroFiscal.value && c.fiscal !== filtroFiscal.value) {
+              return false;
+            }
+            // Filtro Tipo
+            if (filtroTipo.value && c.tipo !== filtroTipo.value) {
+              return false;
+            }
+            // Filtro Faixa
+            if (filtroFaixa.value && c.status !== filtroFaixa.value) {
+              return false;
+            }
+            return true;
+          });
+        });
+
+        // --- Contratos Ordenados ---
+        const contratosOrdenados = computed(() => {
+          return [...filtrados.value].sort((a, b) => {
+            let valA = a[campoOrdenacao.value];
+            let valB = b[campoOrdenacao.value];
+            if (valA === undefined) valA = 0;
+            if (valB === undefined) valB = 0;
+            if (valA < valB) return ordemDesc.value ? 1 : -1;
+            if (valA > valB) return ordemDesc.value ? -1 : 1;
+            return 0;
+          });
+        });
+
+        // --- Cálculos de KPIs ---
+        const kpis = computed(() => {
+          const list = filtrados.value;
+          let totalGlobal = 0;
+          let totalMensal = 0;
+          let valorAlerta = 0;
+          let qtdAlerta = 0;
+          let valorVencido = 0;
+          let qtdVencidos = 0;
+          let totalItens = 0;
+
+          list.forEach(c => {
+            totalGlobal += Number(c.valor_global || 0);
+
+            // Soma mensal dos itens do contrato
+            if (c.itens && c.itens.length > 0) {
+              totalItens += c.itens.length;
+              c.itens.forEach(it => {
+                totalMensal += custoMensalDoItem(it);
+              });
+            }
+
+            // Alerta (<= 90 dias e vigente)
+            if (c.dias_para_vencer >= 0 && c.dias_para_vencer <= 90) {
+              valorAlerta += Number(c.valor_global || 0);
+              qtdAlerta++;
+            }
+
+            // Vencido
+            if (c.dias_para_vencer < 0 || c.status === "Vencido") {
+              valorVencido += Number(c.valor_global || 0);
+              qtdVencidos++;
+            }
+          });
+
+          const ticketMedio = list.length > 0 ? (totalGlobal / list.length) : 0;
+          const percAlerta = totalGlobal > 0 ? ((valorAlerta / totalGlobal) * 100).toFixed(1) : 0;
+          const mediaItensPorContrato = list.length > 0 ? (totalItens / list.length).toFixed(1) : 0;
+
+          return {
+            totalGlobal,
+            totalMensal,
+            valorAlerta,
+            qtdAlerta,
+            valorVencido,
+            qtdVencidos,
+            totalItens,
+            ticketMedio,
+            percAlerta,
+            mediaItensPorContrato
+          };
+        });
+
+        // --- Totais por Tipo (Contrato vs ARP) ---
+        const totaisTipo = computed(() => {
+          let contrato = 0;
+          let arp = 0;
+          filtrados.value.forEach(c => {
+            if (c.tipo === "Ata de registro de preços") {
+              arp += Number(c.valor_global || 0);
+            } else {
+              contrato += Number(c.valor_global || 0);
+            }
+          });
+          return { contrato, arp };
+        });
+
+        // --- Detalhamento consolidado por Fiscal ---
+        const fiscaisDetalhados = computed(() => {
+          const mapa = {};
+          filtrados.value.forEach(c => {
+            const f = c.fiscal || "Sem Fiscal";
+            if (!mapa[f]) {
+              mapa[f] = { nome: f, totalGlobal: 0, totalMensal: 0, contratosCount: 0 };
+            }
+            mapa[f].totalGlobal += Number(c.valor_global || 0);
+            mapa[f].contratosCount += 1;
+            if (c.itens) {
+              c.itens.forEach(it => {
+                mapa[f].totalMensal += custoMensalDoItem(it);
+              });
+            }
+          });
+          return Object.values(mapa).sort((a, b) => b.totalGlobal - a.totalGlobal);
+        });
+
+        // --- Funções Auxiliares de Formatação ---
+        const formatarBRL = (valor) => {
+          if (valor === null || valor === undefined || isNaN(valor)) return "R$ 0,00";
+          return Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        };
+
+        const formatarData = (dataStr) => {
+          if (!dataStr) return "—";
+          const [ano, mes, dia] = dataStr.split("-");
+          return `${dia}/${mes}/${ano}`;
+        };
+
+        // Só itens cobrados por mês entram no custo mensal recorrente. Nos demais
+        // (Unidade, Documento, Mensagem...) a coluna valor_mensal guarda o preço UNITÁRIO.
+        const custoMensalDoItem = (it) => (it.unidade === "Mensal" ? Number(it.valor_mensal || 0) : 0);
+
+        const calcularCustoMensalContrato = (c) => {
+          if (!c.itens) return 0;
+          return c.itens.reduce((acc, it) => acc + custoMensalDoItem(it), 0);
+        };
+
+        const somarTotalItens = (c) => {
+          if (!c.itens) return 0;
+          return c.itens.reduce((acc, it) => acc + Number(it.valor_total_item || 0), 0);
+        };
+
+        const obterCorStatus = (status) => {
+          switch (status) {
+            case "Vencido": return "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]";
+            case "Até 30 dias": return "bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.6)]";
+            case "31 a 60 dias": return "bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)]";
+            case "61 a 90 dias": return "bg-lime-400 shadow-[0_0_8px_rgba(163,230,53,0.6)]";
+            case "Sem data definida": return "bg-gray-500";
+            default: return "bg-teal-400 shadow-[0_0_8px_rgba(45,212,191,0.6)]";
+          }
+        };
+
+        const obterTextoCorStatus = (status) => {
+          switch (status) {
+            case "Vencido": return "text-rose-400";
+            case "Até 30 dias": return "text-orange-400";
+            case "31 a 60 dias": return "text-amber-400";
+            case "61 a 90 dias": return "text-lime-400";
+            case "Sem data definida": return "text-gray-400";
+            default: return "text-teal-400";
+          }
+        };
+
+        // --- Exportações ---
+        const exportarJSON = () => {
+          const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(filtrados.value, null, 2));
+          const dlAnchorElem = document.createElement('a');
+          dlAnchorElem.setAttribute("href", dataStr);
+          dlAnchorElem.setAttribute("download", `contratos_ti_${new Date().toISOString().slice(0,10)}.json`);
+          dlAnchorElem.click();
+        };
+
+        const exportarCSV = () => {
+          const cabecalho = ["Tipo", "Numero", "Processo", "Fornecedor", "Fiscal", "Status", "Vencimento", "Valor_Global", "Custo_Mensal"];
+          const linhas = filtrados.value.map(c => [
+            `"${c.tipo}"`,
+            `"${c.numero_contrato}"`,
+            `"${c.id_processo || ''}"`,
+            `"${c.razao_social}"`,
+            `"${c.fiscal || ''}"`,
+            `"${c.status}"`,
+            `"${c.data_fim}"`,
+            c.valor_global,
+            calcularCustoMensalContrato(c)
+          ]);
+          const csvContent = "data:text/csv;charset=utf-8," + [cabecalho.join(";"), ...linhas.map(e => e.join(";"))].join("\n");
+          const encodedUri = encodeURI(csvContent);
+          const link = document.createElement("a");
+          link.setAttribute("href", encodedUri);
+          link.setAttribute("download", `contratos_ti_${new Date().toISOString().slice(0,10)}.csv`);
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        };
+
+        // --- Inicializacao de Graficos Chart.js ---
+        let barChartInstance = null;
+        let donutChartInstance = null;
+
+        const renderizarGraficos = () => {
+          // 1. Bar Chart: Fiscais
+          const ctxBar = document.getElementById('fiscalBarChart');
+          if (ctxBar) {
+            if (barChartInstance) barChartInstance.destroy();
+
+            const fiscaisData = fiscaisDetalhados.value.slice(0, 7);
+            barChartInstance = new Chart(ctxBar, {
+              type: 'bar',
+              data: {
+                labels: fiscaisData.map(f => f.nome),
+                datasets: [{
+                  label: 'Valor Total (R$)',
+                  data: fiscaisData.map(f => f.totalGlobal),
+                  backgroundColor: 'rgba(20, 184, 166, 0.7)',
+                  hoverBackgroundColor: 'rgba(20, 184, 166, 0.9)',
+                  borderColor: '#14b8a6',
+                  borderWidth: 1,
+                  borderRadius: 6,
+                }]
+              },
+              options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: { display: false },
+                  tooltip: {
+                    callbacks: {
+                      label: function(context) {
+                        return ' ' + formatarBRL(context.raw);
+                      }
+                    }
+                  }
+                },
+                scales: {
+                  x: {
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                    ticks: {
+                      color: '#9ca3af',
+                      font: { family: 'JetBrains Mono', size: 10 },
+                      callback: (val) => 'R$ ' + (val >= 1000 ? (val/1000) + 'k' : val)
+                    }
+                  },
+                  y: {
+                    grid: { display: false },
+                    ticks: { color: '#e5e7eb', font: { family: 'Inter', size: 11 } }
+                  }
+                }
+              }
+            });
+          }
+
+          // 2. Donut Chart: Contratos vs ARPs
+          const ctxDonut = document.getElementById('tipoDonutChart');
+          if (ctxDonut) {
+            if (donutChartInstance) donutChartInstance.destroy();
+
+            donutChartInstance = new Chart(ctxDonut, {
+              type: 'doughnut',
+              data: {
+                labels: ['Contratos', 'ARPs'],
+                datasets: [{
+                  data: [totaisTipo.value.contrato, totaisTipo.value.arp],
+                  backgroundColor: ['#14b8a6', '#06b6d4'],
+                  borderColor: '#030712',
+                  borderWidth: 3,
+                  hoverOffset: 6
+                }]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '72%',
+                plugins: {
+                  legend: {
+                    position: 'bottom',
+                    labels: { color: '#9ca3af', boxWidth: 12, font: { size: 11 } }
+                  },
+                  tooltip: {
+                    callbacks: {
+                      label: function(context) {
+                        return ' ' + context.label + ': ' + formatarBRL(context.raw);
+                      }
+                    }
+                  }
+                }
+              }
+            });
+          }
+        };
+
+        // Atualizar graficos sempre que os dados filtrados mudarem
+        watch([filtrados], () => {
+          nextTick(() => {
+            renderizarGraficos();
+            lucide.createIcons();
+          });
+        });
+
+        onMounted(() => {
+          lucide.createIcons();
+          renderizarGraficos();
+        });
+
+        return {
+          contratos,
+          origemDados,
+          filtrados,
+          contratosOrdenados,
+          kpis,
+          totaisTipo,
+          fiscaisDetalhados,
+          listaFiscais,
+          filtroTexto,
+          filtroFiscal,
+          filtroTipo,
+          filtroFaixa,
+          temFiltroAtivo,
+          campoOrdenacao,
+          ordemDesc,
+          expandidos,
+          alternarExpandir,
+          alternarOrdenacao,
+          resetFiltros,
+          formatarBRL,
+          formatarData,
+          calcularCustoMensalContrato,
+          somarTotalItens,
+          obterCorStatus,
+          obterTextoCorStatus,
+          exportarJSON,
+          exportarCSV
+        };
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>

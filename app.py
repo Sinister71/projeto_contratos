@@ -9,11 +9,22 @@ Para expor na rede do setor (outros colegas acessarem pelo navegador):
 Depois compartilhe: http://SEU-IP-NA-REDE:8501
 """
 
+import os
+from datetime import datetime
+
 import pandas as pd  # type: ignore
 import plotly.express as px  # type: ignore
 import streamlit as st  # type: ignore
 
+from backup import MOTIVO_MANUAL, fazer_backup, ultimo_backup
 from database import inicializar_banco
+from exportar_dashboard import (
+    CHAVE_CONTRATOS,
+    CHAVE_ITENS,
+    PASTA_DASHBOARD,
+    publicar_dashboard,
+    publicar_se_desatualizado,
+)
 from painel import pagina_painel_geral, pagina_resumo_semanal
 from queries import (
     atualizar_etapa,
@@ -66,6 +77,8 @@ ROTULO_VIGENCIA = "Vigência"
 ROTULO_NUMERO_PEDIDO = "Nº do pedido"
 ROTULO_DATA_ENVIO = "Data de envio"
 FORMATO_DATA_BR = "DD/MM/YYYY"
+LIMITE_DIAS_SEM_BACKUP = 7
+CHAVE_BACKUP_RECENTE = "backup_recente"
 
 st.set_page_config(page_title="Painel de TI", layout="wide")
 inicializar_banco()
@@ -87,8 +100,76 @@ def ir_para_itens(contrato_id: int):
     st.session_state["pagina_radio"] = PAGINA_ITENS_NOME
 
 
+def _texto_ultimo_backup() -> tuple[str, bool]:
+    """(texto, atrasado): quando foi o último backup e se passou do limite de dias."""
+    ultimo = ultimo_backup()
+    if ultimo is None:
+        return "Nenhum backup feito ainda.", True
+    quando = ultimo[1]
+    dias = (datetime.now() - quando).days
+    quando_texto = "hoje" if dias == 0 else f"há {dias} dia(s)"
+    return f"Último backup: {quando:%d/%m/%Y %H:%M} ({quando_texto})", dias > LIMITE_DIAS_SEM_BACKUP
+
+
+def _executar_backup_manual(pasta_extra: str) -> None:
+    try:
+        caminho = fazer_backup(motivo=MOTIVO_MANUAL)
+        if pasta_extra:
+            fazer_backup(pasta=pasta_extra, motivo=MOTIVO_MANUAL)
+    except (OSError, RuntimeError) as erro:
+        st.error(f"Não foi possível fazer o backup: {erro}")
+        return
+    with open(caminho, "rb") as arquivo:
+        st.session_state[CHAVE_BACKUP_RECENTE] = (os.path.basename(caminho), arquivo.read())
+    st.success("Backup criado.")
+
+
+def _sidebar_backup() -> None:
+    with st.sidebar.expander("💾 Backup do banco"):
+        pasta_extra = st.text_input(
+            "Copiar também para (opcional)",
+            placeholder="Ex.: D:\\Backups ou uma pasta de rede",
+            key="backup_pasta_extra",
+        )
+        if st.button("Fazer backup agora", key="btn_backup"):
+            _executar_backup_manual(pasta_extra.strip())
+        recente = st.session_state.get(CHAVE_BACKUP_RECENTE)
+        if recente:
+            st.download_button(
+                "⬇️ Baixar esta cópia",
+                data=recente[1],
+                file_name=recente[0],
+                mime="application/octet-stream",
+            )
+        texto, atrasado = _texto_ultimo_backup()
+        if atrasado:
+            st.warning(texto)
+        else:
+            st.caption(texto)
+
+
+def _publicar_dashboard_se_preciso() -> None:
+    """Mantém dashboard/dados_contratos.js em dia: republica só quando o banco mudou."""
+    try:
+        publicar_se_desatualizado()
+    except OSError as erro:
+        st.sidebar.warning(f"Dashboard web não atualizado: {erro}")
+
+
+def _sidebar_dashboard() -> None:
+    with st.sidebar.expander("🌐 Dashboard web"):
+        st.caption("Atualizado sozinho a cada alteração. Abra este arquivo no navegador (duplo clique):")
+        st.code(os.path.join(PASTA_DASHBOARD, "index.html"), language=None)
+        if st.button("Atualizar agora", key="btn_dashboard"):
+            publicado = publicar_dashboard()
+            st.success(f"{publicado[CHAVE_CONTRATOS]} contratos e {publicado[CHAVE_ITENS]} itens publicados.")
+
+
+_publicar_dashboard_se_preciso()
 st.sidebar.title("Painel de TI")
 pagina = st.sidebar.radio("Menu", OPCOES_MENU, key="pagina_radio")
+_sidebar_backup()
+_sidebar_dashboard()
 
 
 def montar_opcoes(df, rotulo):

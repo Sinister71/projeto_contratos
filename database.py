@@ -14,6 +14,12 @@ PASTA_PROJETO = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(PASTA_PROJETO, "projetos.db")
 
 # Constantes para dados de exemplo (S1192)
+# Origem do contrato e quem arquivou (valores gravados no banco)
+ORIGEM_PLANILHA = "planilha"
+ORIGEM_MANUAL = "manual"
+ARQUIVADO_POR_IMPORTACAO = "importacao"
+ARQUIVADO_POR_MANUAL = ORIGEM_MANUAL
+
 PROJETO_MIGRACAO = "Migração de servidores"
 PROJETO_REDE = "Atualização de rede"
 
@@ -150,7 +156,9 @@ def criar_schema_contratos():
             situacao_planilha TEXT,
             observacoes TEXT,
             arquivado INTEGER NOT NULL DEFAULT 0,
-            origem TEXT NOT NULL DEFAULT 'planilha'
+            origem TEXT NOT NULL DEFAULT 'planilha',
+            arquivado_por TEXT,
+            snapshot_planilha TEXT
         )
         """
     )
@@ -171,6 +179,11 @@ def migrar_colunas_contratos():
         "situacao_planilha": "TEXT",
         "arquivado": "INTEGER NOT NULL DEFAULT 0",
         "origem": "TEXT NOT NULL DEFAULT 'planilha'",
+        # arquivado_por: 'importacao' (saiu da planilha) ou 'manual' (arquivado por você)
+        "arquivado_por": "TEXT",
+        # snapshot_planilha: o que a planilha dizia na última importação (JSON). Permite
+        # distinguir o que VOCÊ editou no sistema do que apenas veio da planilha.
+        "snapshot_planilha": "TEXT",
     }
     for coluna, tipo in colunas_necessarias.items():
         if coluna not in colunas_existentes:

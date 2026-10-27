@@ -8,7 +8,7 @@ from typing import Optional
 
 import pandas as pd  # type: ignore
 
-from database import get_connection
+from database import ARQUIVADO_POR_IMPORTACAO, ARQUIVADO_POR_MANUAL, get_connection
 
 DIAS_ALERTA_VENCIMENTO = 90  # a partir de quantos dias antes do vencimento vira "alerta"
 STATUS_SEM_DATA = "Sem data definida"
@@ -142,34 +142,52 @@ def inserir_contrato(contrato: ContratoDTO) -> None:
 
 
 def atualizar_contrato(contrato_id: int, contrato: ContratoDTO) -> None:
+    """Grava a edição feita na tela. Regras do arquivamento:
+
+    * arquivar à mão     -> arquivado_por = 'manual' (a importação nunca reativa);
+    * reativar à mão um contrato que a importação tinha arquivado -> passa a ser
+      'manual' e a importação não o arquiva de novo.
+    """
+    arquivar = 1 if contrato.arquivado else 0
     conn = get_connection()
     conn.execute(
         """
         UPDATE contratos
-        SET id_processo = ?, tipo = ?, numero_contrato = ?, nome_contrato = ?, razao_social = ?,
-            nome_fantasia = ?, cnpj = ?, objeto = ?, data_inicio = ?, data_fim = ?,
-            fiscal = ?, unidade_area = ?, situacao_planilha = ?, observacoes = ?,
-            arquivado = ?
-        WHERE id = ?
+        SET id_processo = :id_processo, tipo = :tipo, numero_contrato = :numero_contrato,
+            nome_contrato = :nome_contrato, razao_social = :razao_social,
+            nome_fantasia = :nome_fantasia, cnpj = :cnpj, objeto = :objeto,
+            data_inicio = :data_inicio, data_fim = :data_fim, fiscal = :fiscal,
+            unidade_area = :unidade_area, situacao_planilha = :situacao_planilha,
+            observacoes = :observacoes,
+            origem = CASE WHEN :arquivar = 0 AND arquivado = 1
+                               AND arquivado_por = :por_importacao
+                          THEN :manual ELSE origem END,
+            arquivado_por = CASE WHEN :arquivar = 0 THEN NULL
+                                 WHEN arquivado = 1 THEN arquivado_por
+                                 ELSE :manual END,
+            arquivado = :arquivar
+        WHERE id = :contrato_id
         """,
-        (
-            contrato.id_processo,
-            contrato.tipo,
-            contrato.numero_contrato,
-            contrato.nome_contrato,
-            contrato.razao_social,
-            contrato.nome_fantasia,
-            contrato.cnpj,
-            contrato.objeto,
-            contrato.data_inicio.isoformat() if contrato.data_inicio else None,
-            contrato.data_fim.isoformat() if contrato.data_fim else None,
-            contrato.fiscal,
-            contrato.unidade_area,
-            contrato.situacao_planilha,
-            contrato.observacoes,
-            1 if contrato.arquivado else 0,
-            int(contrato_id),
-        ),
+        {
+            "id_processo": contrato.id_processo,
+            "tipo": contrato.tipo,
+            "numero_contrato": contrato.numero_contrato,
+            "nome_contrato": contrato.nome_contrato,
+            "razao_social": contrato.razao_social,
+            "nome_fantasia": contrato.nome_fantasia,
+            "cnpj": contrato.cnpj,
+            "objeto": contrato.objeto,
+            "data_inicio": contrato.data_inicio.isoformat() if contrato.data_inicio else None,
+            "data_fim": contrato.data_fim.isoformat() if contrato.data_fim else None,
+            "fiscal": contrato.fiscal,
+            "unidade_area": contrato.unidade_area,
+            "situacao_planilha": contrato.situacao_planilha,
+            "observacoes": contrato.observacoes,
+            "arquivar": arquivar,
+            "por_importacao": ARQUIVADO_POR_IMPORTACAO,
+            "manual": ARQUIVADO_POR_MANUAL,
+            "contrato_id": int(contrato_id),
+        },
     )
     conn.commit()
     conn.close()

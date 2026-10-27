@@ -1,100 +1,163 @@
-# Painel de Acompanhamento de Projetos e Demandas Técnicas
+# Painel de TI — Contratos, Pedidos e Projetos
 
-Protótipo local (sem depender de servidor da empresa) para acompanhar etapas
-de projetos de TI: migração de servidores, atualização de rede, etc.
+Sistema local (sem depender de servidor da empresa) feito em Python, Streamlit
+e SQLite para acompanhar contratos, atas de registro de preços (ARPs), itens
+de contratos, pedidos e projetos da área de TI, com um dashboard web (Vue)
+alimentado pelos mesmos dados.
 
-## O que tem aqui
+## Arquivos
 
-- `database.py` — cria o banco SQLite (`projetos.db`), com as tabelas de
-  projetos e de contratos, e insere dados de exemplo de projetos na primeira
-  execução
-- `queries.py` — consulta, cadastro, edição e KPIs das etapas de projeto
-- `queries_contratos.py` — consulta, busca, cadastro, edição e KPIs dos
-  contratos/atas de registro de preços
-- `import_contratos.py` — importa sua planilha de contratos (.xlsx) para o
-  banco de uma vez só
-- `app.py` — o app Streamlit, com 4 páginas no menu lateral
+- `app.py` — o app Streamlit (menu lateral, páginas, backup e dashboard web)
+- `painel.py` — Painel Geral (gráficos, Gantt) e página do Resumo Semanal
+- `resumo_semanal.py` — monta o resumo semanal e gera Excel / HTML / texto
+- `gerar_resumo_semanal.py` — script agendável: resumo + backup semanal + dashboard
+- `import_contratos.py` — importa a planilha de contratos (.xlsx)
+- `backup.py` — backup do banco (manual, antes de importar e semanal)
+- `exportar_dashboard.py` — publica os dados do dashboard web
+- `dashboard/index.html` — o dashboard web (Vue 3, Tailwind, Chart.js, Lucide)
+- `database.py` — banco SQLite (`projetos.db`) e criação das tabelas
+- `queries_contratos.py`, `queries_itens.py`, `queries_pedidos.py`,
+  `queries.py` — acesso aos dados
 - `requirements.txt` — dependências Python
 
-## Importando sua planilha de contratos
-
-Depois de instalar as dependências (passo 3 abaixo), rode uma vez:
+## Como rodar
 
 ```bash
-python import_contratos.py Contratos_e_ARPs.xlsx
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+streamlit run app.py
 ```
 
-Isso lê a aba "GETI - Visão geral" e carrega todos os contratos/atas no
-banco. Pode rodar de novo sempre que a planilha for atualizada — ele
-substitui os dados antigos pelos novos (a tabela de projetos não é afetada).
-O status de cada contrato (Vigente / Vencendo em breve / Vencido) é
-calculado automaticamente com base na data de vencimento — não depende da
-coluna "Situação" da planilha.
-
-## Como rodar (primeira vez)
-
-1. Instale o Python 3.10+ (se ainda não tiver): [python.org/downloads](https://www.python.org/downloads/)
-2. Abra um terminal nesta pasta e crie um ambiente virtual (recomendado):
-
-    ```bash
-     python -m venv venv
-     venv\Scripts\activate        # Windows
-     source venv/bin/activate     # Mac/Linux
-    ```
-
-3. Instale as dependências:
-
-    ```bash
-     pip install -r requirements.txt
-    ```
-
-4. Rode o app:
-
-  ```bash
-   streamlit run app.py
-   ```
-
-   Isso abre automaticamente no navegador em `http://localhost:8501`.
-   O banco `projetos.db` é criado na mesma pasta, já com 6 etapas de exemplo
-   (2 projetos: migração de servidores e atualização de rede) para você ver
-   o dashboard funcionando de cara. Pode apagar os exemplos e cadastrar os
-   dados reais pela tela "Cadastrar / editar etapa".
-
-## Como usar
-
-- **Dashboard de Projetos**: KPIs (atrasadas, concluídas no mês, em
-  andamento), gráfico Gantt colorido por status, carga de trabalho por
-  responsável e tabela geral
-- **Cadastrar / editar etapa**: formulário para adicionar novas etapas, e
-  seletor para editar ou excluir uma etapa existente
-- **Contratos e Licitações**: KPIs (vigentes, vencendo em até 60 dias,
-  vencidos), busca por texto (fornecedor, nº do contrato, objeto, fiscal) e
-  filtro por status
-- **Cadastrar / editar contrato**: formulário para adicionar novos
-  contratos/atas, e seletor para editar ou excluir um existente
-
-## Para os colegas do setor acessarem também (2-3 editores)
-
-Rode o app expondo na rede local, na mesma máquina onde ele já roda:
+Abre em `http://localhost:8501`. Para os colegas acessarem pela rede:
 
 ```bash
 streamlit run app.py --server.address 0.0.0.0 --server.port 8501
 ```
 
-Depois, compartilhe `http://SEU-IP-NA-REDE:8501` com os colegas — eles
-acessam pelo navegador deles, sem instalar nada. Para descobrir seu IP na
-rede local: `ipconfig` (Windows) ou `ifconfig`/`ip a` (Mac/Linux).
+## Backup do banco
 
-Isso ainda não tem login/senha. Como só vai circular dentro da rede do
-setor com 2-3 pessoas, pode ser aceitável no início — mas se quiser
-adicionar uma senha simples depois, o pacote `streamlit-authenticator`
-resolve isso em poucas linhas. Posso ajudar com isso quando chegar a hora.
+Todos os dados ficam no arquivo `projetos.db`. Faça backup com frequência.
 
-## Próximos passos sugeridos
+- **Pelo app:** barra lateral > **💾 Backup do banco** > *Fazer backup agora*.
+  O app avisa quando o último backup tem mais de 7 dias. Você pode informar uma
+  pasta extra (pasta de rede, OneDrive) para receber uma cópia, e baixar a cópia.
+- **Pelo terminal:** `python backup.py` (opções `--pasta` e `--manter`).
+- **Automático:** o backup é feito sozinho **antes de cada importação** e a cada
+  execução do `gerar_resumo_semanal.py`. As cópias ficam em `backups/`, com a
+  data e o motivo no nome, e só as 30 mais recentes de cada tipo são mantidas.
 
-1. Trocar os dados de exemplo pelos seus projetos reais
-2. Ajustar os nomes dos projetos/etapas ao seu vocabulário do setor
-3. Validar sozinho por 1-2 semanas
-4. Expor na rede para os colegas
-5. Depois: começar o segundo projeto (Sistema de Gestão de Contratos de TI
-   e Licitações), reaproveitando a mesma estrutura de banco + Streamlit
+Copiar o `projetos.db` pelo Explorer também funciona, desde que o app esteja
+fechado. O backup do `backup.py` usa a API do próprio SQLite, então sai
+consistente mesmo com o app aberto, e cada cópia é verificada antes de ser aceita.
+
+Guarde também uma cópia **fora deste computador**: backup só na mesma máquina
+não protege contra falha de disco.
+
+Para restaurar:
+
+1. feche o app;
+2. renomeie o `projetos.db` atual (guarde-o);
+3. copie a cópia desejada de `backups/` para a pasta do projeto com o nome
+   `projetos.db`.
+
+## Atualizando a planilha de contratos
+
+```bash
+python import_contratos.py Contratos_e_ARPs.xlsx
+```
+
+Rode sempre que a planilha mudar. As regras:
+
+- **Identidade do contrato = tipo + nº do contrato** (ex.: "Contrato 115-2025").
+  O ID do processo não é chave porque muda a cada renovação.
+- Contrato que já existe é **atualizado** com o que mudou na planilha. Itens e
+  observações são preservados, inclusive em renovações.
+- **O que você editou no sistema é protegido.** Se um campo do sistema for
+  diferente do que a planilha dizia na última importação, ele é mantido e a
+  importação apenas avisa que a planilha está diferente. Exemplo: você renovou o
+  172-2025 à mão antes de a planilha ser atualizada. O aviso some sozinho quando
+  a planilha passar a dizer o mesmo que o sistema. Se a planilha trouxer outra
+  data, o sistema continua valendo e o aviso se repete.
+- Para a planilha **sobrescrever tudo**, inclusive suas edições:
+  `python import_contratos.py Contratos_e_ARPs.xlsx --forcar-planilha`.
+- Contrato novo é **inserido**.
+- Contrato que **saiu da planilha** é **arquivado**, não apagado: some do
+  painel e dos resumos, mas os itens continuam guardados. Se voltar à planilha,
+  é reativado sozinho.
+- Contrato que **você** arquivou à mão continua arquivado. Contrato que a
+  importação arquivou e você reativou à mão passa a ser "seu" e não é arquivado
+  de novo. Contratos cadastrados à mão em "Cadastros" nunca são arquivados.
+- Linhas repetidas do mesmo contrato na planilha (ex.: uma do processo de
+  renovação ainda sem datas) são unificadas: vale a de vencimento mais recente.
+- Antes de gravar, é feito um backup automático (`--sem-backup` desliga).
+
+Na **primeira** importação depois de atualizar o sistema ainda não existe o
+histórico "o que a planilha dizia da última vez". Nessa vez, qualquer diferença
+entre o sistema e a planilha é tratada como edição sua e fica protegida.
+
+## Dashboard web
+
+O dashboard (`dashboard/index.html`) é uma página estática que **lê os dados
+publicados pelo sistema**. O Streamlit continua sendo o único lugar onde os
+dados são editados.
+
+- Os dados vão para `dashboard/dados_contratos.js` (usado pela página) e
+  `dashboard/contratos.json` (o mesmo conteúdo, para outras ferramentas).
+- São republicados **sozinhos** a cada alteração feita no app, depois de cada
+  importação e a cada execução do resumo semanal. Em *Dashboard web* na barra
+  lateral há também o botão *Atualizar agora*.
+- Para abrir: dê um duplo clique em `dashboard/index.html`. Funciona sem servidor.
+  Para compartilhar, coloque a pasta `dashboard/` em uma pasta de rede ou sirva
+  com `python -m http.server 8080 --directory dashboard`.
+- Os arquivos de dados trazem só fatos (datas, valores, itens). Prazo em dias,
+  faixa de vencimento e valor global são calculados pelo navegador ao abrir a
+  página, então o dashboard nunca mostra prazos desatualizados.
+- O dashboard não recebe observações internas nem CNPJ. Quem tiver o arquivo
+  vê os valores dos contratos: trate a pasta com o mesmo cuidado do banco.
+- O **custo mensal recorrente** soma só itens com unidade "Mensal". Nos demais
+  itens (Unidade, Documento, Mensagem...) a coluna `valor_mensal` guarda o preço
+  unitário, que não é custo mensal.
+- Sem o arquivo de dados, a página mostra dados de exemplo e avisa no cabeçalho.
+- As bibliotecas (Vue, Tailwind, Chart.js, Lucide) vêm de CDN: o computador que
+  abrir a página precisa de internet.
+
+## Menu
+
+- **📊 Painel Geral** (tela inicial): vencidos e a vencer em 30 / 60 / 90 dias,
+  Gantt dos contratos que vencem primeiro, fiscais, fornecedores, pedidos de
+  cada ARP e pendências de cadastro
+- **📋 Resumo Semanal**: contratos nas faixas, o que mudou de faixa nos últimos
+  7 dias, o que vence em 7 dias e o resumo por fiscal. Baixe em Excel, HTML ou
+  texto, ou copie a mensagem pronta (Teams, e-mail, WhatsApp)
+- **📄 Contratos e Licitações**: busca, filtro por status e botão "Ver itens"
+- **📄 Itens do Contrato**: itens de cada contrato (nº automático; valor global
+  é a soma dos itens)
+- **📦 Controle de Pedidos**: restante em dias calculado, filtro por ARP e
+  situação "Atrasado" automática
+- **✏️ Cadastros**: contratos/ARPs, pedidos e etapas de projeto
+- **📁 Projetos**: dashboard de etapas de projetos
+
+## Agendamentos (Windows)
+
+A tela **Resumo Semanal** mostra, em "Receber automaticamente toda semana", o
+comando pronto com os caminhos do seu computador. Ele agenda o
+`gerar_resumo_semanal.py` toda segunda-feira às 08:00. Cada execução gera o
+resumo em `resumos/`, faz o backup semanal e atualiza os dados do dashboard. O
+computador precisa estar ligado no horário.
+
+Também dá para rodar na mão:
+
+```bash
+python gerar_resumo_semanal.py
+python gerar_resumo_semanal.py --pasta \\servidor\pasta
+python gerar_resumo_semanal.py --simular 2026-12-01
+python gerar_resumo_semanal.py --sem-backup
+```
+
+## Observações
+
+- Os status (vencido, até 30 dias, etc.) são recalculados todo dia a partir da
+  data de vencimento; não dependem da coluna "Situação" da planilha.
+- Ainda não há login/senha. Se for expor na rede, vale adicionar autenticação
+  (por exemplo, `streamlit-authenticator`)
