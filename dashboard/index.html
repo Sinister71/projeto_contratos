@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard Executivo — Gestão Financeira de Contratos & Atas de TI</title>
 
-  <!-- Tailwind CSS -->
+  <!-- Tailwind CSS (carregado por CDN: precisa de internet) -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -28,30 +28,47 @@
     }
   </script>
 
-  <!-- Google Fonts: Inter -->
+  <!-- Fontes do Google: Inter e JetBrains Mono (opcional: sem internet, o navegador usa a fonte do sistema) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
-  <!-- Vue 3 -->
-  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <!-- Bibliotecas locais (pasta vendor/): não dependem de CDN nem de hash de integridade.
+       Versões fixas: Vue 3.4.21, Chart.js 4.4.1 e Lucide 0.344.0 (detalhes em vendor/LEIAME.txt). -->
+  <script src="vendor/vue.global.prod.js"></script>
+  <script src="vendor/chart.umd.js"></script>
+  <script src="vendor/lucide.min.js"></script>
 
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Verificação de carga: se alguma biblioteca não carregar, mostra um aviso claro
+       em vez de deixar o painel "cru", com as chaves {{ }} aparecendo na tela. -->
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      var faltando = [];
+      if (typeof Vue === "undefined") faltando.push("Vue (vendor/vue.global.prod.js)");
+      if (typeof Chart === "undefined") faltando.push("Chart.js (vendor/chart.umd.js)");
+      if (typeof lucide === "undefined") faltando.push("Lucide (vendor/lucide.min.js)");
+      if (!faltando.length) return;
+      var aviso = document.getElementById("erro-bibliotecas");
+      aviso.querySelector("[data-lista]").textContent = faltando.join(", ");
+      aviso.hidden = false;
+    });
+  </script>
 
   <style>
     body {
       font-family: 'Inter', sans-serif;
-      background-color: #030712; /* zinc-950 */
+      background-color: #030712; /* equivale ao zinc-950 do Tailwind */
       color: #f3f4f6;
     }
     .font-mono-num {
       font-family: 'JetBrains Mono', monospace;
     }
-    /* Custom Scrollbar */
+    /* Esconde o painel até o Vue terminar de montar (evita mostrar as chaves {{ }}).
+       O !important é necessário: a classe "flex" do Tailwind, usada no #app, teria a mesma força. */
+    [v-cloak] {
+      display: none !important;
+    }
+    /* Barra de rolagem personalizada */
     ::-webkit-scrollbar {
       width: 6px;
       height: 6px;
@@ -79,9 +96,18 @@
 </head>
 <body class="min-h-screen antialiased selection:bg-teal-500 selection:text-white">
 
+  <!-- Aviso exibido só quando alguma biblioteca da pasta vendor/ não carrega -->
+  <div id="erro-bibliotecas" hidden
+       style="margin:24px;padding:16px 20px;border:1px solid #b91c1c;border-radius:12px;background:#450a0a;color:#fecaca;font-family:system-ui,sans-serif;font-size:14px;line-height:1.5">
+    <strong>Não foi possível carregar o painel.</strong><br>
+    Bibliotecas que falharam: <span data-lista></span>.<br>
+    Confira se a pasta <code>vendor/</code> está ao lado do <code>index.html</code> e abra o console
+    do navegador (F12) para ver os detalhes. O Tailwind e as fontes ainda dependem de internet.
+  </div>
+
   <div id="app" class="flex flex-col min-h-screen" v-cloak>
     
-    <!-- Top Navigation -->
+    <!-- Barra de navegação superior -->
     <header class="sticky top-0 z-40 border-b border-gray-800/80 bg-gray-950/80 backdrop-blur-md px-6 py-3.5">
       <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div class="flex items-center gap-3">
@@ -104,7 +130,7 @@
           </div>
         </div>
 
-        <!-- Quick actions -->
+        <!-- Ações rápidas -->
         <div class="flex items-center gap-2.5">
           <button @click="exportarCSV" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-900 hover:bg-gray-800 text-gray-300 border border-gray-700 transition shadow-sm">
             <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-400"></i>
@@ -122,13 +148,13 @@
       </div>
     </header>
 
-    <!-- Main Content -->
+    <!-- Conteúdo principal -->
     <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6">
 
-      <!-- Financial Global KPIs -->
+      <!-- Indicadores financeiros globais (KPIs) -->
       <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         
-        <!-- Total Sob Gestao -->
+        <!-- Valor total sob gestão -->
         <div class="card-glass p-5 rounded-2xl relative overflow-hidden card-glass-hover transition">
           <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-cyan-500/10 rounded-full blur-xl pointer-events-none"></div>
           <div class="flex justify-between items-start">
@@ -149,7 +175,7 @@
           </div>
         </div>
 
-        <!-- Custo Mensal Recorrente -->
+        <!-- Custo mensal recorrente -->
         <div class="card-glass p-5 rounded-2xl relative overflow-hidden card-glass-hover transition">
           <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-emerald-500/10 rounded-full blur-xl pointer-events-none"></div>
           <div class="flex justify-between items-start">
@@ -170,7 +196,7 @@
           </div>
         </div>
 
-        <!-- Alerta Financeiro (A Vencer em até 90 dias) -->
+        <!-- Alerta financeiro (a vencer em até 90 dias) -->
         <div class="card-glass p-5 rounded-2xl relative overflow-hidden card-glass-hover transition">
           <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-amber-500/10 rounded-full blur-xl pointer-events-none"></div>
           <div class="flex justify-between items-start">
@@ -192,7 +218,7 @@
           </div>
         </div>
 
-        <!-- Contratos Vencidos / Arquivados -->
+        <!-- Contratos vencidos -->
         <div class="card-glass p-5 rounded-2xl relative overflow-hidden card-glass-hover transition">
           <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-rose-500/10 rounded-full blur-xl pointer-events-none"></div>
           <div class="flex justify-between items-start">
@@ -216,14 +242,16 @@
 
       </section>
 
-      <!-- Advanced Filter Bar -->
+      <!-- Barra de filtros avançados -->
       <section class="card-glass p-4 rounded-2xl space-y-3">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
           
-          <!-- Search input -->
+          <!-- Campo de busca por texto -->
           <div class="relative md:col-span-1">
             <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            <label for="filtroTexto" class="sr-only">Buscar contrato, fornecedor ou objeto</label>
             <input 
+              id="filtroTexto"
               v-model="filtroTexto" 
               type="text" 
               placeholder="Buscar contrato, fornecedor, objeto..." 
@@ -231,9 +259,11 @@
             >
           </div>
 
-          <!-- Fiscal Select -->
+          <!-- Seletor de fiscal -->
           <div>
+            <label for="filtroFiscal" class="sr-only">Filtrar por fiscal</label>
             <select 
+              id="filtroFiscal"
               v-model="filtroFiscal" 
               class="w-full bg-gray-900/90 border border-gray-700/80 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-teal-500 transition cursor-pointer"
             >
@@ -242,9 +272,11 @@
             </select>
           </div>
 
-          <!-- Tipo Select -->
+          <!-- Seletor de tipo (Contrato / ARP) -->
           <div>
+            <label for="filtroTipo" class="sr-only">Filtrar por tipo</label>
             <select 
+              id="filtroTipo"
               v-model="filtroTipo" 
               class="w-full bg-gray-900/90 border border-gray-700/80 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-teal-500 transition cursor-pointer"
             >
@@ -254,9 +286,11 @@
             </select>
           </div>
 
-          <!-- Faixa de Vencimento -->
+          <!-- Seletor de faixa de vencimento -->
           <div>
+            <label for="filtroFaixa" class="sr-only">Filtrar por faixa de vencimento</label>
             <select 
+              id="filtroFaixa"
               v-model="filtroFaixa" 
               class="w-full bg-gray-900/90 border border-gray-700/80 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-teal-500 transition cursor-pointer"
             >
@@ -271,7 +305,7 @@
           </div>
         </div>
 
-        <!-- Filter Badges / Active stats -->
+        <!-- Indicador de filtros ativos e somas filtradas -->
         <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-gray-800/60 text-xs text-gray-400">
           <div class="flex items-center gap-2">
             <span>Exibindo <strong>{{ filtrados.length }}</strong> de <strong>{{ contratos.length }}</strong> contratos cadastrados.</span>
@@ -286,10 +320,10 @@
         </div>
       </section>
 
-      <!-- Charts Row -->
+      <!-- Linha de gráficos -->
       <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        <!-- Fiscais Ranking / Bar Chart -->
+        <!-- Ranking de fiscais (gráfico de barras) -->
         <div class="card-glass p-5 rounded-2xl lg:col-span-2 flex flex-col justify-between">
           <div class="flex items-center justify-between mb-4">
             <div>
@@ -308,7 +342,7 @@
           </div>
         </div>
 
-        <!-- Composição Contrato vs ARP / Donut Chart -->
+        <!-- Composição Contrato x ARP (gráfico de rosca) -->
         <div class="card-glass p-5 rounded-2xl flex flex-col justify-between">
           <div class="flex items-center justify-between mb-4">
             <div>
@@ -336,10 +370,10 @@
 
       </section>
 
-      <!-- Contracts & Items Drilldown Matrix -->
+      <!-- Matriz de contratos com detalhamento dos itens -->
       <section class="card-glass rounded-2xl overflow-hidden">
         
-        <!-- Table header & quick sort -->
+        <!-- Cabeçalho da tabela e ordenação rápida -->
         <div class="px-5 py-4 border-b border-gray-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h3 class="text-sm font-semibold text-white flex items-center gap-2">
@@ -357,7 +391,10 @@
               class="px-2.5 py-1 rounded-lg border font-medium transition flex items-center gap-1"
             >
               Valor Global
-              <i :data-lucide="ordemDesc ? 'arrow-down' : 'arrow-up'" class="w-3 h-3"></i>
+              <!-- O key força o Vue a recriar o ícone: o Lucide troca o <i> por um <svg> e o Vue perderia a referência -->
+              <span :key="ordemDesc ? 'ordem-desc' : 'ordem-asc'" class="inline-flex">
+                <i :data-lucide="ordemDesc ? 'arrow-down' : 'arrow-up'" class="w-3 h-3"></i>
+              </span>
             </button>
             <button 
               @click="alternarOrdenacao('dias_para_vencer')"
@@ -369,7 +406,7 @@
           </div>
         </div>
 
-        <!-- Contracts Table -->
+        <!-- Tabela de contratos -->
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs text-gray-300">
             <thead class="bg-gray-900/90 text-gray-400 uppercase tracking-wider text-[11px] border-b border-gray-800">
@@ -387,7 +424,7 @@
               
               <template v-for="c in contratosOrdenados" :key="c.id">
                 
-                <!-- Main Contract Row -->
+                <!-- Linha principal do contrato -->
                 <tr 
                   @click="alternarExpandir(c.id)"
                   :class="{'bg-gray-900/60': expandidos.includes(c.id)}"
@@ -395,11 +432,13 @@
                 >
                   <td class="py-3 px-3 text-center">
                     <button class="p-1 rounded hover:bg-gray-800 text-gray-400 group-hover:text-teal-400 transition">
-                      <i :data-lucide="expandidos.includes(c.id) ? 'chevron-down' : 'chevron-right'" class="w-4 h-4"></i>
+                      <span :key="'seta-' + c.id + '-' + expandidos.includes(c.id)" class="inline-flex">
+                        <i :data-lucide="expandidos.includes(c.id) ? 'chevron-down' : 'chevron-right'" class="w-4 h-4"></i>
+                      </span>
                     </button>
                   </td>
                   
-                  <!-- Identificacao -->
+                  <!-- Identificação -->
                   <td class="py-3 px-3 whitespace-nowrap">
                     <div class="flex items-center gap-2">
                       <span 
@@ -413,7 +452,7 @@
                     <span class="text-[11px] text-gray-500 block mt-0.5">Proc: {{ c.id_processo || 'S/N' }}</span>
                   </td>
 
-                  <!-- Fornecedor & Objeto -->
+                  <!-- Fornecedor e objeto -->
                   <td class="py-3 px-4 max-w-sm">
                     <span class="font-medium text-white block truncate">{{ c.razao_social }}</span>
                     <span class="text-[11px] text-gray-400 block line-clamp-1 mt-0.5">{{ c.objeto }}</span>
@@ -427,7 +466,7 @@
                     </span>
                   </td>
 
-                  <!-- Status / Prazo -->
+                  <!-- Situação e prazo -->
                   <td class="py-3 px-3 whitespace-nowrap">
                     <div class="flex items-center gap-2">
                       <span 
@@ -441,19 +480,19 @@
                     </span>
                   </td>
 
-                  <!-- Custo Mensal -->
+                  <!-- Custo mensal -->
                   <td class="py-3 px-4 text-right whitespace-nowrap font-mono-num">
                     <span class="font-semibold text-emerald-400">{{ formatarBRL(calcularCustoMensalContrato(c)) }}</span>
                   </td>
 
-                  <!-- Valor Global -->
+                  <!-- Valor global -->
                   <td class="py-3 px-4 text-right whitespace-nowrap font-mono-num">
                     <span class="font-bold text-white text-sm">{{ formatarBRL(c.valor_global) }}</span>
                     <span class="text-[10px] text-gray-500 block">{{ c.itens ? c.itens.length : 0 }} itens</span>
                   </td>
                 </tr>
 
-                <!-- Expanded Items Drilldown View -->
+                <!-- Detalhamento expandido dos itens -->
                 <tr v-if="expandidos.includes(c.id)" class="bg-gray-950/90">
                   <td colspan="7" class="p-0">
                     <div class="px-6 py-4 border-y border-teal-500/20 bg-gradient-to-b from-gray-900/60 to-gray-950/80">
@@ -516,7 +555,7 @@
 
               </template>
 
-              <!-- Empty State -->
+              <!-- Estado vazio (nenhum contrato encontrado) -->
               <tr v-if="contratosOrdenados.length === 0">
                 <td colspan="7" class="py-12 text-center text-gray-400">
                   <i data-lucide="inbox" class="w-8 h-8 mx-auto text-gray-600 mb-2"></i>
@@ -530,7 +569,7 @@
 
       </section>
 
-      <!-- Fiscal Summary Drawer / Cards Section -->
+      <!-- Resumo por fiscal (cartões) -->
       <section class="card-glass p-5 rounded-2xl space-y-4">
         <div class="flex items-center justify-between">
           <div>
@@ -571,7 +610,7 @@
 
     </main>
 
-    <!-- Footer -->
+    <!-- Rodapé -->
     <footer class="mt-auto border-t border-gray-800/60 py-4 px-6 text-center text-xs text-gray-500">
       Painel Gerencial de Contratos de TI • Vue 3 & Tailwind CSS • Dados integrados e reativos
     </footer>
@@ -584,7 +623,7 @@
 
     createApp({
       setup() {
-        // --- Mock Dataset realista e completo ---
+        // --- Dados de exemplo (usados só quando o dados_contratos.js não existe) ---
         const CONTRATOS_EXEMPLO = [
           {
             id: 1,
@@ -782,10 +821,10 @@
         const filtroTipo = ref("");
         const filtroFaixa = ref("");
 
-        // --- Ordenacao & UI state ---
+        // --- Ordenação e estado da interface ---
         const campoOrdenacao = ref("valor_global");
         const ordemDesc = ref(true);
-        const expandidos = ref([1, 4]); // Iniciar com alguns abertos para demonstrar o visual
+        const expandidos = ref(DADOS_REAIS ? [] : [1, 4]); // Dados reais: tudo recolhido. Exemplo: 2 abertos para mostrar o visual
 
         const alternarExpandir = (id) => {
           const index = expandidos.value.indexOf(id);
@@ -804,6 +843,7 @@
             campoOrdenacao.value = campo;
             ordemDesc.value = true;
           }
+          nextTick(() => lucide.createIcons());
         };
 
         const resetFiltros = () => {
@@ -817,16 +857,16 @@
           return !!(filtroTexto.value || filtroFiscal.value || filtroTipo.value || filtroFaixa.value);
         });
 
-        // --- Lista de Fiscais únicos ---
+        // --- Lista de fiscais (sem repetição) ---
         const listaFiscais = computed(() => {
           const setF = new Set(contratos.value.map(c => c.fiscal).filter(Boolean));
           return Array.from(setF).sort();
         });
 
-        // --- Contratos Filtrados ---
+        // --- Contratos filtrados ---
         const filtrados = computed(() => {
           return contratos.value.filter(c => {
-            // Busca texto
+            // Busca por texto
             if (filtroTexto.value) {
               const q = filtroTexto.value.toLowerCase();
               const match = (c.numero_contrato || "").toLowerCase().includes(q) ||
@@ -836,15 +876,15 @@
                             (c.id_processo || "").toLowerCase().includes(q);
               if (!match) return false;
             }
-            // Filtro Fiscal
+            // Filtro por fiscal
             if (filtroFiscal.value && c.fiscal !== filtroFiscal.value) {
               return false;
             }
-            // Filtro Tipo
+            // Filtro por tipo
             if (filtroTipo.value && c.tipo !== filtroTipo.value) {
               return false;
             }
-            // Filtro Faixa
+            // Filtro por faixa de vencimento
             if (filtroFaixa.value && c.status !== filtroFaixa.value) {
               return false;
             }
@@ -852,7 +892,7 @@
           });
         });
 
-        // --- Contratos Ordenados ---
+        // --- Contratos ordenados ---
         const contratosOrdenados = computed(() => {
           return [...filtrados.value].sort((a, b) => {
             let valA = a[campoOrdenacao.value];
@@ -879,7 +919,7 @@
           list.forEach(c => {
             totalGlobal += Number(c.valor_global || 0);
 
-            // Soma mensal dos itens do contrato
+            // Soma mensal dos itens do contrato (só itens cobrados por mês)
             if (c.itens && c.itens.length > 0) {
               totalItens += c.itens.length;
               c.itens.forEach(it => {
@@ -887,13 +927,13 @@
               });
             }
 
-            // Alerta (<= 90 dias e vigente)
+            // Alerta: vence em até 90 dias e ainda está vigente
             if (c.dias_para_vencer >= 0 && c.dias_para_vencer <= 90) {
               valorAlerta += Number(c.valor_global || 0);
               qtdAlerta++;
             }
 
-            // Vencido
+            // Vencido: a data de vencimento já passou
             if (c.dias_para_vencer < 0 || c.status === "Vencido") {
               valorVencido += Number(c.valor_global || 0);
               qtdVencidos++;
@@ -918,7 +958,7 @@
           };
         });
 
-        // --- Totais por Tipo (Contrato vs ARP) ---
+        // --- Totais por tipo (Contrato x ARP) ---
         const totaisTipo = computed(() => {
           let contrato = 0;
           let arp = 0;
@@ -932,7 +972,7 @@
           return { contrato, arp };
         });
 
-        // --- Detalhamento consolidado por Fiscal ---
+        // --- Detalhamento consolidado por fiscal ---
         const fiscaisDetalhados = computed(() => {
           const mapa = {};
           filtrados.value.forEach(c => {
@@ -951,7 +991,7 @@
           return Object.values(mapa).sort((a, b) => b.totalGlobal - a.totalGlobal);
         });
 
-        // --- Funções Auxiliares de Formatação ---
+        // --- Funções auxiliares de formatação ---
         const formatarBRL = (valor) => {
           if (valor === null || valor === undefined || isNaN(valor)) return "R$ 0,00";
           return Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -1000,43 +1040,64 @@
         };
 
         // --- Exportações ---
-        const exportarJSON = () => {
-          const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(filtrados.value, null, 2));
-          const dlAnchorElem = document.createElement('a');
-          dlAnchorElem.setAttribute("href", dataStr);
-          dlAnchorElem.setAttribute("download", `contratos_ti_${new Date().toISOString().slice(0,10)}.json`);
-          dlAnchorElem.click();
+        // Baixa um texto como arquivo. Usa Blob (e não uma URL "data:") porque numa URL "data:"
+        // o caractere "#" corta o conteúdo, e o CSV saía truncado quando um nome tinha "#".
+        const baixarArquivo = (conteudo, nomeArquivo, tipoMime) => {
+          const url = URL.createObjectURL(new Blob([conteudo], { type: tipoMime }));
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = nomeArquivo;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
         };
+
+        const dataParaNomeDeArquivo = () => new Date().toISOString().slice(0, 10);
+
+        const exportarJSON = () => {
+          baixarArquivo(
+            JSON.stringify(filtrados.value, null, 2),
+            `contratos_ti_${dataParaNomeDeArquivo()}.json`,
+            "application/json;charset=utf-8"
+          );
+        };
+
+        // Campo de texto do CSV: entre aspas, com as aspas internas duplicadas (padrão RFC 4180).
+        // Textos que começam com = + - @ ganham um apóstrofo para o Excel não os tratar como fórmula.
+        const campoCSV = (valor) => {
+          const texto = String(valor ?? "");
+          const seguro = /^[=+\-@]/.test(texto) ? "'" + texto : texto;
+          return `"${seguro.replace(/"/g, '""')}"`;
+        };
+
+        // Número no padrão brasileiro (vírgula decimal), para o Excel em português reconhecer.
+        const numeroCSV = (valor) => Number(valor || 0).toFixed(2).replace(".", ",");
 
         const exportarCSV = () => {
           const cabecalho = ["Tipo", "Numero", "Processo", "Fornecedor", "Fiscal", "Status", "Vencimento", "Valor_Global", "Custo_Mensal"];
           const linhas = filtrados.value.map(c => [
-            `"${c.tipo}"`,
-            `"${c.numero_contrato}"`,
-            `"${c.id_processo || ''}"`,
-            `"${c.razao_social}"`,
-            `"${c.fiscal || ''}"`,
-            `"${c.status}"`,
-            `"${c.data_fim}"`,
-            c.valor_global,
-            calcularCustoMensalContrato(c)
+            campoCSV(c.tipo),
+            campoCSV(c.numero_contrato),
+            campoCSV(c.id_processo),
+            campoCSV(c.razao_social),
+            campoCSV(c.fiscal),
+            campoCSV(c.status),
+            campoCSV(c.data_fim),
+            numeroCSV(c.valor_global),
+            numeroCSV(calcularCustoMensalContrato(c))
           ]);
-          const csvContent = "data:text/csv;charset=utf-8," + [cabecalho.join(";"), ...linhas.map(e => e.join(";"))].join("\n");
-          const encodedUri = encodeURI(csvContent);
-          const link = document.createElement("a");
-          link.setAttribute("href", encodedUri);
-          link.setAttribute("download", `contratos_ti_${new Date().toISOString().slice(0,10)}.csv`);
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
+          // O BOM ("\uFEFF") faz o Excel abrir o arquivo em UTF-8, preservando os acentos.
+          const conteudo = "\uFEFF" + [cabecalho.join(";"), ...linhas.map(l => l.join(";"))].join("\r\n");
+          baixarArquivo(conteudo, `contratos_ti_${dataParaNomeDeArquivo()}.csv`, "text/csv;charset=utf-8");
         };
 
-        // --- Inicializacao de Graficos Chart.js ---
+        // --- Inicialização dos gráficos (Chart.js) ---
         let barChartInstance = null;
         let donutChartInstance = null;
 
         const renderizarGraficos = () => {
-          // 1. Bar Chart: Fiscais
+          // 1. Gráfico de barras: valor por fiscal
           const ctxBar = document.getElementById('fiscalBarChart');
           if (ctxBar) {
             if (barChartInstance) barChartInstance.destroy();
@@ -1088,7 +1149,7 @@
             });
           }
 
-          // 2. Donut Chart: Contratos vs ARPs
+          // 2. Gráfico de rosca: Contratos x ARPs
           const ctxDonut = document.getElementById('tipoDonutChart');
           if (ctxDonut) {
             if (donutChartInstance) donutChartInstance.destroy();
@@ -1127,7 +1188,7 @@
           }
         };
 
-        // Atualizar graficos sempre que os dados filtrados mudarem
+        // Atualiza os gráficos e os ícones sempre que os dados filtrados mudarem
         watch([filtrados], () => {
           nextTick(() => {
             renderizarGraficos();

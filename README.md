@@ -15,6 +15,7 @@ alimentado pelos mesmos dados.
 - `backup.py` — backup do banco (manual, antes de importar e semanal)
 - `exportar_dashboard.py` — publica os dados do dashboard web
 - `dashboard/index.html` — o dashboard web (Vue 3, Tailwind, Chart.js, Lucide)
+- `dashboard/vendor/` — Vue, Chart.js e Lucide hospedados localmente (com licenças)
 - `database.py` — banco SQLite (`projetos.db`) e criação das tabelas
 - `queries_contratos.py`, `queries_itens.py`, `queries_pedidos.py`,
   `queries.py` — acesso aos dados
@@ -119,8 +120,16 @@ dados são editados.
   itens (Unidade, Documento, Mensagem...) a coluna `valor_mensal` guarda o preço
   unitário, que não é custo mensal.
 - Sem o arquivo de dados, a página mostra dados de exemplo e avisa no cabeçalho.
-- As bibliotecas (Vue, Tailwind, Chart.js, Lucide) vêm de CDN: o computador que
-  abrir a página precisa de internet.
+- **Vue, Chart.js e Lucide ficam na pasta `dashboard/vendor/`** (versões fixas,
+  com licenças e checksums no `LEIAME.txt`). Não dependem de CDN. Mantenha a pasta
+  `vendor/` ao lado do `index.html` ao copiar ou compartilhar o dashboard. Se ela
+  faltar, a página mostra um aviso vermelho dizendo o que não carregou.
+- O **Tailwind e as fontes ainda vêm da internet** (CDN). Sem internet o painel
+  funciona, mas sem o visual: aparece sem estilo.
+- Não coloque o atributo `integrity` (SRI) nas tags `<script>` sem conferir o
+  hash do arquivo real. Um hash errado faz o navegador **bloquear** a biblioteca
+  e o painel quebra (aparecem as chaves `{{ }}` na tela). Para arquivos locais,
+  ele não é necessário.
 
 ## Menu
 
@@ -160,4 +169,4 @@ python gerar_resumo_semanal.py --sem-backup
 - Os status (vencido, até 30 dias, etc.) são recalculados todo dia a partir da
   data de vencimento; não dependem da coluna "Situação" da planilha.
 - Ainda não há login/senha. Se for expor na rede, vale adicionar autenticação
-  (por exemplo, `streamlit-authenticator`)
+  (por exemplo, `streamlit-authenticator`).

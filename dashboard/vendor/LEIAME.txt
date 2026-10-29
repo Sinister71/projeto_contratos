@@ -1,0 +1,50 @@
+BIBLIOTECAS DO DASHBOARD (hospedadas localmente)
+====================================================
+
+Estes arquivos são cópias exatas dos pacotes oficiais publicados no npm.
+Ficam aqui, ao lado do index.html, para o painel funcionar sem depender de CDN.
+
+Vue 3.4.21  (MIT)
+  arquivo ......: vendor/vue.global.prod.js
+  origem .......: pacote npm "vue@3.4.21", arquivo dist/vue.global.prod.js
+  tamanho ......: 147.534 bytes
+  SHA-256 ......: 4963101441ded7e420c05665e7c616b2f2e3851c99e1cf8af84d29d6f10e77da
+  SHA-384 (SRI) : sha384-6pS1WSZJY7wOk6qQTa9C9U2W1/qzqL7iYoMil7qn9KFeN5fZDAwIExgCd7U5AH+X
+
+Chart.js 4.4.1  (MIT)
+  arquivo ......: vendor/chart.umd.js
+  origem .......: pacote npm "chart.js@4.4.1", arquivo dist/chart.umd.js
+  tamanho ......: 205.125 bytes
+  SHA-256 ......: 74401d738dd3e03ee5dfb3b6841210fe2c4ead8a960c4011ca4ba0b78a9fd8f3
+  SHA-384 (SRI) : sha384-dug+JxfBvklEQdJ4AYuBBAIScUz0bVN73xpy273gcAwHjb3qI0fXmuYNaNfdyYJG
+
+Lucide 0.344.0  (ISC)
+  arquivo ......: vendor/lucide.min.js
+  origem .......: pacote npm "lucide@0.344.0", arquivo dist/umd/lucide.min.js
+  tamanho ......: 317.289 bytes
+  SHA-256 ......: 7c973be50ea92f69da298e017e01e8e6a068f8b599ee087041181f151c8ef092
+  SHA-384 (SRI) : sha384-tTkFttkBclaU1cloKwOi9xk3pbao3VZxTjLNBt8iFABWDBQibbAbWpVmO28zMuxq
+
+COMO CONFERIR A INTEGRIDADE
+----------------------------
+No Windows (PowerShell):   Get-FileHash vendor\vue.global.prod.js -Algorithm SHA256
+O resultado deve ser igual ao SHA-256 acima.
+
+POR QUE NÃO HÁ ATRIBUTO integrity (SRI) NAS TAGS <script>
+--------------------------------------------------------
+O integrity só faz sentido para arquivos de CDN (de outro site). Em arquivos locais abertos
+com duplo clique (file://) o navegador pode recusar a verificação. Aqui a proteção é outra:
+os arquivos são fixos, estão na sua pasta e ninguém os altera sem você saber.
+ATENÇÃO: nunca copie um hash de integrity de um texto ou de uma resposta de IA sem conferir.
+Um hash inventado ou errado faz o navegador BLOQUEAR a biblioteca, e o painel quebra.
+Se um dia voltar a usar CDN com SRI, gere o hash do arquivo real baixado:
+  openssl dgst -sha384 -binary arquivo.js | openssl base64 -A
+
+COMO ATUALIZAR UMA BIBLIOTECA
+-----------------------------
+1. Baixe o pacote:   npm pack vue@<nova versão>   (o arquivo fica dentro do .tgz)
+2. Troque o arquivo desta pasta pelo novo e atualize as versões e os hashes acima.
+3. Abra o painel e confira os ícones, os gráficos e a exportação antes de usar.
+O Lucide é sensível a versão: ícones são renomeados entre versões e o painel usa 22 nomes.
+
+LICENÇAS: veja a pasta vendor/licencas/.
