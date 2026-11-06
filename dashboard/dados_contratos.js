@@ -1,30 +1,7 @@
 window.DADOS_CONTRATOS = {
  "versao": 1,
- "gerado_em": "2026-10-29T08:33:36",
+ "gerado_em": "2026-11-05T08:43:33",
  "contratos": [
-  {
-   "id": 42,
-   "id_processo": "GDC-0691/2025",
-   "tipo": "Contrato",
-   "numero_contrato": "080-2023",
-   "razao_social": "HELP INTERNET LTDA",
-   "objeto": "LINK DE INTERNET ADSL - ÁGUA BOA",
-   "data_inicio": "2025-10-21",
-   "data_fim": "2026-10-20",
-   "fiscal": "Linyker Theodoro Pereira Vidal",
-   "itens": [
-    {
-     "item_numero": "1",
-     "descricao": "LINK ADSL (700 MB) - ÁGUA BOA",
-     "local": "Salas 25 e 26 do Shopping Água Boa situado a Av. Planalto, nº 321, Bairro Centro - Água Boa/MT",
-     "unidade": "Mensal",
-     "quantidade": 12.0,
-     "valor_mensal": 139.99,
-     "valor_total_item": 1679.88,
-     "vigencia_texto": "12 meses"
-    }
-   ]
-  },
   {
    "id": 43,
    "id_processo": "GDC-1066/2025",
@@ -832,6 +809,29 @@ window.DADOS_CONTRATOS = {
      "quantidade": 12.0,
      "valor_mensal": 13699.47,
      "valor_total_item": 164393.64,
+     "vigencia_texto": "12 meses"
+    }
+   ]
+  },
+  {
+   "id": 42,
+   "id_processo": "GDC-0691/2025",
+   "tipo": "Contrato",
+   "numero_contrato": "080-2023",
+   "razao_social": "HELP INTERNET LTDA",
+   "objeto": "LINK DE INTERNET ADSL - ÁGUA BOA",
+   "data_inicio": "2026-10-21",
+   "data_fim": "2027-10-20",
+   "fiscal": "Linyker Theodoro Pereira Vidal",
+   "itens": [
+    {
+     "item_numero": "1",
+     "descricao": "LINK ADSL (700 MB) - ÁGUA BOA",
+     "local": "Salas 25 e 26 do Shopping Água Boa situado a Av. Planalto, nº 321, Bairro Centro - Água Boa/MT",
+     "unidade": "Mensal",
+     "quantidade": 12.0,
+     "valor_mensal": 139.99,
+     "valor_total_item": 1679.88,
      "vigencia_texto": "12 meses"
     }
    ]
