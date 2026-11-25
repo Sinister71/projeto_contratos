@@ -1,7 +1,19 @@
 window.DADOS_CONTRATOS = {
  "versao": 1,
- "gerado_em": "2026-11-05T08:43:33",
+ "gerado_em": "2026-11-25T09:49:42",
  "contratos": [
+  {
+   "id": 69,
+   "id_processo": "GDC-0821/2025",
+   "tipo": "Contrato",
+   "numero_contrato": "149-2024",
+   "razao_social": "CXW SERVICOS E NEGOCIOS DE TECNOLOGIA LTDA",
+   "objeto": "ORIGEM DE LICITAÇÃO, REPROGRAFIA E CÓPIAS - IMPRESSORAS COMODATO",
+   "data_inicio": "2025-11-27",
+   "data_fim": "2026-11-26",
+   "fiscal": "Alan Moura da Silva",
+   "itens": []
+  },
   {
    "id": 43,
    "id_processo": "GDC-1066/2025",
@@ -550,6 +562,18 @@ window.DADOS_CONTRATOS = {
    ]
   },
   {
+   "id": 70,
+   "id_processo": "GDC-0928/2026",
+   "tipo": "Contrato",
+   "numero_contrato": "096-2026",
+   "razao_social": "L M PRESTACAO DE SERVICOS LTDA",
+   "objeto": "PE 020/2026 - DEDETIZAÇÃO, DESRATIZAÇÃO E LIMPEZA",
+   "data_inicio": "2026-07-14",
+   "data_fim": "2027-07-14",
+   "fiscal": "Feliciano Junior",
+   "itens": []
+  },
+  {
    "id": 62,
    "id_processo": "GDC-0645/2025",
    "tipo": "Contrato",
@@ -835,6 +859,42 @@ window.DADOS_CONTRATOS = {
      "vigencia_texto": "12 meses"
     }
    ]
+  },
+  {
+   "id": 71,
+   "id_processo": "GDC-1147/2026",
+   "tipo": "Contrato",
+   "numero_contrato": "116-2026",
+   "razao_social": "WIFEED TECNOLOGIA LTDA",
+   "objeto": "Contratação de serviço de Plataforma de HotSpot Wi-Fi",
+   "data_inicio": "2026-10-23",
+   "data_fim": "2027-10-23",
+   "fiscal": "Linyker Theodoro Pereira Vidal",
+   "itens": []
+  },
+  {
+   "id": 72,
+   "id_processo": "GDC-1219/2026",
+   "tipo": "Contrato",
+   "numero_contrato": "119-2026",
+   "razao_social": "OLMI INFORMATICA LTDA",
+   "objeto": "Aquisição de equipamento de informática (notebook) para atender as necessidadesda Gerência de Serviços Educacionais do SENACT/MAquisição de Notebooks Corporativos e de Alta Performance",
+   "data_inicio": "2026-11-12",
+   "data_fim": "2027-11-12",
+   "fiscal": "Arthur Peres Carvalho Pires",
+   "itens": []
+  },
+  {
+   "id": 73,
+   "id_processo": "GDC-1220/2026",
+   "tipo": "Contrato",
+   "numero_contrato": "118-2026",
+   "razao_social": "DATEN TECNOLOGIA LTDA",
+   "objeto": "Aquisição de equipamento de informática (notebook) para atender as necessidadesda Gerência de Serviços Educacionais do SENACT/MAquisição de Notebooks Corporativos e de Alta Performance",
+   "data_inicio": "2026-11-12",
+   "data_fim": "2027-11-12",
+   "fiscal": "Arthur Peres Carvalho Pires",
+   "itens": []
   }
  ]
 };
